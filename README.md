@@ -30,7 +30,7 @@
 - Have an android phone? ADB, [scrcpy](https://github.com/Genymobile/scrcpy) and [Universal Android Debloater](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) are included in ShadowOS
 - `ujust scrcpy-cam` command included if you want to use your phone's camera as your camera *(you might want to run `ujust scrcpy-cam edit` first)*
 - `ujust toggle-autologin` command included in Cosmic/XFCE variants if you prefer to auto-login into your desktop *(KDE/Gnome should have the option in settings)*
-- Automatic system, firmware, flatpak, appimage, brew and theme updates *(firmware updates are not applied by default)*
+- Automatic system, flatpak, appimage, brew and theme updates
 - Replaced Bazaar with Gnome Software *(Cosmic Store in the Cosmic variant)*
 - Run MangoHUD in any game out-of-the-box just by pressing the `END` key
 - Automatic DLSS upgrades in all games
