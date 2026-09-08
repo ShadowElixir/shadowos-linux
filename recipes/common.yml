@@ -69,11 +69,11 @@ modules:
       ID: shadowos
       RELEASE_TYPE: latest
       DEFAULT_HOSTNAME: shadowos
-      HOME_URL: https://shadowelixir.github.io
-      DOCUMENTATION_URL: https://github.com/ShadowOS-Linux/shadowos-linux
-      SUPPORT_URL: https://github.com/ShadowOS-Linux/shadowos-linux/issues
-      BUG_REPORT_URL: https://github.com/ShadowOS-Linux/shadowos-linux/issues
-      BOOTLOADER_NAME: ShadowOS Linux
+      HOME_URL: https://shadowelixir.github.io/linux
+      DOCUMENTATION_URL: https://github.com/ShadowElixir/shadowos-linux
+      SUPPORT_URL: https://github.com/ShadowElixir/shadowos-linux/issues
+      BUG_REPORT_URL: https://github.com/ShadowElixir/shadowos-linux/issues
+      BOOTLOADER_NAME: ShadowOS
 
   - type: script
     snippets:
