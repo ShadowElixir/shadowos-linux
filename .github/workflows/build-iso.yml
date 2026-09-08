@@ -191,7 +191,7 @@ jobs:
         with:
           arch: x86_64
           image_name: ${{ steps.meta.outputs.container_image }}
-          image_repo: ghcr.io/shadowos-linux 
+          image_repo: ghcr.io/shadowelixir 
           image_tag: ${{ steps.meta.outputs.image_tag }}
           version: ${{ steps.clean_version.outputs.stable_one }}
           variant: 'Kinoite'
