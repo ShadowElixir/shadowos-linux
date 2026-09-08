@@ -5,13 +5,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/shadowos-linux/shadowos-linux/actions/workflows/build.yml"><img src="https://github.com/shadowos-linux/shadowos-linux/actions/workflows/build.yml/badge.svg" alt="image build badge"/></a>
-  <a href="https://github.com/shadowos-linux/shadowos-linux/actions/workflows/build-iso.yml"><img src="https://github.com/shadowos-linux/shadowos-linux/actions/workflows/build-iso.yml/badge.svg" alt="iso build badge"/></a>
+  <a href="https://github.com/shadowelixir/shadowos-linux/actions/workflows/build.yml"><img src="https://github.com/shadowelixir/shadowos-linux/actions/workflows/build.yml/badge.svg" alt="image build badge"/></a>
+  <a href="https://github.com/shadowelixir/shadowos-linux/actions/workflows/build-iso.yml"><img src="https://github.com/shadowelixir/shadowos-linux/actions/workflows/build-iso.yml/badge.svg" alt="iso build badge"/></a>
 </p>
 
 <p align="center">
-  <a href="https://shadowos-linux.github.io/">
-    <img src="https://raw.githubusercontent.com/ShadowOS-Linux/shadowos-linux.github.io/refs/heads/main/images/Download.svg" alt="Download ShadowOS" style="height: 48px; width: auto;" />
+  <a href="https://shadowelixir.github.io/linux">
+    <img src="https://raw.githubusercontent.com/ShadowElixir/linux/refs/heads/main/images/Download.svg" alt="Download ShadowOS" style="height: 48px; width: auto;" />
   </a>
 </p>
 
@@ -41,24 +41,24 @@
 <table>
   <tr>
     <td align="center" valign="top" width="50%">
-      <img src="https://raw.githubusercontent.com/ShadowOS-Linux/shadowos-linux.github.io/refs/heads/main/images/cosmic.png" alt="Cosmic" width="100%"/>
+      <img src="https://raw.githubusercontent.com/ShadowElixir/linux/refs/heads/main/images/cosmic.png" alt="Cosmic" width="100%"/>
       <br />
       <b>Cosmic</b>
     </td>
     <td align="center" valign="top" width="50%">
-      <img src="https://raw.githubusercontent.com/ShadowOS-Linux/shadowos-linux.github.io/refs/heads/main/images/gnome.png" alt="Gnome" width="100%"/>
+      <img src="https://raw.githubusercontent.com/ShadowElixir/linux/refs/heads/main/images/gnome.png" alt="Gnome" width="100%"/>
       <br />
       <b>Gnome</b>
     </td>
   </tr>
   <tr>
     <td align="center" valign="top" width="50%">
-      <img src="https://raw.githubusercontent.com/ShadowOS-Linux/shadowos-linux.github.io/refs/heads/main/images/kde.png" alt="KDE Plasma" width="100%"/>
+      <img src="https://raw.githubusercontent.com/ShadowElixir/linux/refs/heads/main/images/kde.png" alt="KDE Plasma" width="100%"/>
       <br />
       <b>KDE Plasma</b>
     </td>
     <td align="center" valign="top" width="50%">
-      <img src="https://raw.githubusercontent.com/ShadowOS-Linux/shadowos-linux.github.io/refs/heads/main/images/xfce.png" alt="XFCE" width="100%"/>
+      <img src="https://raw.githubusercontent.com/ShadowElixir/linux/refs/heads/main/images/xfce.png" alt="XFCE" width="100%"/>
       <br />
       <b>XFCE</b>
     </td>
@@ -70,8 +70,8 @@
 <h2 align="center">ISO</h2>
 
 You can download the latest ISO file from:
-- **[The official website](https://shadowos-linux.github.io/)*** *([Source Code](https://github.com/ShadowOS-Linux/shadowos-linux.github.io))*
-- The '[Actions](https://github.com/ShadowOS-Linux/shadowos-linux/actions/workflows/build-iso.yml)' page
+- **[The official website](https://shadowelixir.github.io/linux/)*** *([Source Code](https://github.com/ShadowElixir/linux))*
+- The '[Actions](https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build-iso.yml)' page
 
 **credits to [nightly.link](https://github.com/oprypin/nightly.link) for allowing artifact downloads without needing an account*
 
@@ -193,7 +193,7 @@ After that, either:
 
 - Rebase to the unsigned image, to get the proper signing keys and policies installed:
   ```
-  rpm-ostree rebase ostree-unverified-registry:ghcr.io/shadowos-linux/$VARIANT
+  rpm-ostree rebase ostree-unverified-registry:ghcr.io/shadowelixir/$VARIANT
   ```
 - Reboot to complete the rebase:
   ```
@@ -201,7 +201,7 @@ After that, either:
   ```
 - Then rebase to the signed image, like so:
   ```
-  (source /etc/os-release && rpm-ostree rebase ostree-image-signed:docker://ghcr.io/shadowos-linux/$VARIANT_ID:$RELEASE_TYPE)
+  (source /etc/os-release && rpm-ostree rebase ostree-image-signed:docker://ghcr.io/shadowelixir/$VARIANT_ID:$RELEASE_TYPE)
   ```
 - Reboot again to complete the installation
   ```
@@ -214,7 +214,7 @@ After that, either:
 <summary><b>Rebase an existing ShadowOS Linux installation to another variant</b></summary>
 
   ```
-  rpm-ostree rebase ostree-image-signed:docker://ghcr.io/shadowos-linux/$VARIANT
+  rpm-ostree rebase ostree-image-signed:docker://ghcr.io/shadowelixir/$VARIANT
   ```
 </details>
 
@@ -223,7 +223,7 @@ After that, either:
 These images are signed with [Sigstore](https://www.sigstore.dev/)'s [cosign](https://github.com/sigstore/cosign). You can verify the signature by downloading the `cosign.pub` file from this repo and running the following command:
 
 ```bash
-cosign verify --key cosign.pub ghcr.io/shadowos-linux/shadowos-linux
+cosign verify --key cosign.pub ghcr.io/shadowelixir/shadowos-linux
 ```
 
 <h1 align="center">Disclaimer</h1>
