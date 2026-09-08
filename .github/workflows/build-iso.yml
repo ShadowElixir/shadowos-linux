@@ -208,5 +208,5 @@ jobs:
             ${{ steps.build.outputs.iso_path }}/${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
             ${{ steps.build.outputs.iso_path }}/${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso-CHECKSUM
           name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.zip
-          retention-days: 2
+          retention-days: 4
           compression-level: 0
