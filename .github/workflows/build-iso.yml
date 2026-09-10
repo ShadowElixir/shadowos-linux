@@ -1,7 +1,7 @@
 name: Build ISO
 on:
   workflow_run:
-    workflows: ["Build Image"]
+    workflows: ["Build Image", "Verify ISO"]
     types: [completed]
   workflow_dispatch:
 
@@ -13,7 +13,7 @@ jobs:
   generate-iso-matrix:
     name: Generate ISO Build Matrix
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ (github.event.workflow_run.name == 'Build Image' && github.event.workflow_run.conclusion == 'success') || (github.event.workflow_run.name == 'Verify ISO' && github.event.workflow_run.conclusion == 'failure') || github.event_name == 'workflow_dispatch' }}
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
