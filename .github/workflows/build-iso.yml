@@ -205,7 +205,7 @@ jobs:
       - name: Clean folders after Attempt 1 failure
         if: steps.iso_build_1.outcome == 'failure'
         shell: bash
-        run: sudo rm -rf /cache /build-container-installer
+        run: sudo rm -rf /cache /build-container-installer /home/runner/work/_actions/jasonn3/build-container-installer
 
       - name: Build ISO (Second Attempt)
         id: iso_build_2
@@ -228,7 +228,7 @@ jobs:
       - name: Clean folders after Attempt 2 failure
         if: steps.iso_build_2.outcome == 'failure'
         shell: bash
-        run: sudo rm -rf /cache /build-container-installer
+        run: sudo rm -rf /cache /build-container-installer /home/runner/work/_actions/jasonn3/build-container-installer
 
       - name: Build ISO (Third Attempt)
         id: iso_build_3
