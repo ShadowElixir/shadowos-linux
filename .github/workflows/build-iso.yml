@@ -184,9 +184,10 @@ jobs:
 
           FINAL_REFS=$(echo "$FINAL_REFS" | xargs)
           echo "refs=$FINAL_REFS" >> $GITHUB_OUTPUT
-
-      - name: Build ISO
-        id: build
+          
+      - name: Build ISO (First Attempt)
+        id: iso_build_1
+        continue-on-error: true
         uses: jasonn3/build-container-installer@main
         with:
           arch: x86_64
@@ -201,12 +202,69 @@ jobs:
           enable_cache_dnf: "false"
           enable_cache_skopeo: "false"
 
+      - name: Clean folders after Attempt 1 failure
+        if: steps.iso_build_1.outcome == 'failure'
+        shell: bash
+        run: sudo rm -rf /cache /build-container-installer
+
+      - name: Build ISO (Second Attempt)
+        id: iso_build_2
+        if: steps.iso_build_1.outcome == 'failure'
+        continue-on-error: true
+        uses: jasonn3/build-container-installer@main
+        with:
+          arch: x86_64
+          image_name: ${{ steps.meta.outputs.container_image }}
+          image_repo: ghcr.io/shadowelixir 
+          image_tag: ${{ steps.meta.outputs.image_tag }}
+          version: ${{ steps.clean_version.outputs.stable_one }}
+          variant: 'Kinoite'
+          additional_templates: '/github/workspace/files/installer/remove_root_password_prompt.tmpl'
+          flatpak_remote_refs: ${{ steps.flatpak_list.outputs.refs }}
+          iso_name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
+          enable_cache_dnf: "false"
+          enable_cache_skopeo: "false"
+
+      - name: Clean folders after Attempt 2 failure
+        if: steps.iso_build_2.outcome == 'failure'
+        shell: bash
+        run: sudo rm -rf /cache /build-container-installer
+
+      - name: Build ISO (Third Attempt)
+        id: iso_build_3
+        if: steps.iso_build_2.outcome == 'failure'
+        uses: jasonn3/build-container-installer@main
+        with:
+          arch: x86_64
+          image_name: ${{ steps.meta.outputs.container_image }}
+          image_repo: ghcr.io/shadowelixir 
+          image_tag: ${{ steps.meta.outputs.image_tag }}
+          version: ${{ steps.clean_version.outputs.stable_one }}
+          variant: 'Kinoite'
+          additional_templates: '/github/workspace/files/installer/remove_root_password_prompt.tmpl'
+          flatpak_remote_refs: ${{ steps.flatpak_list.outputs.refs }}
+          iso_name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
+          enable_cache_dnf: "false"
+          enable_cache_skopeo: "false"
+
+      - name: Set ISO Output Path Metadata
+        id: final_path
+        shell: bash
+        run: |
+          if [ "${{ steps.iso_build_1.outcome }}" == "success" ]; then
+            echo "iso_path=${{ steps.iso_build_1.outputs.iso_path }}" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.iso_build_2.outcome }}" == "success" ]; then
+            echo "iso_path=${{ steps.iso_build_2.outputs.iso_path }}" >> $GITHUB_OUTPUT
+          else
+            echo "iso_path=${{ steps.iso_build_3.outputs.iso_path }}" >> $GITHUB_OUTPUT
+          fi
+          
       - name: Upload ISO to Job Artifacts
         uses: actions/upload-artifact@main
         with:
           path: |
-            ${{ steps.build.outputs.iso_path }}/${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
-            ${{ steps.build.outputs.iso_path }}/${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso-CHECKSUM
+            ${{ steps.final_path.outputs.iso_path }}/${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
+            ${{ steps.final_path.outputs.iso_path }}/${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso-CHECKSUM
           name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.zip
           retention-days: 4
           compression-level: 0
