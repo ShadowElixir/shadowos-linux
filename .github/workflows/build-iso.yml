@@ -205,7 +205,10 @@ jobs:
       - name: Clean folders after Attempt 1 failure
         if: steps.iso_build_1.outcome == 'failure'
         shell: bash
-        run: sudo rm -rf /cache /build-container-installer /home/runner/work/_actions/jasonn3/build-container-installer/container /home/runner/work/_actions/jasonn3/build-container-installer/flatpaks
+        run: |
+          sudo rm -rf /cache /build-container-installer
+          cd /home/runner/work/_actions/jasonn3/build-container-installer/main
+          sudo find container flatpaks -mindepth 1 ! -name 'Makefile' -exec rm -rf {} +
 
       - name: Build ISO (Second Attempt)
         id: iso_build_2
@@ -228,8 +231,11 @@ jobs:
       - name: Clean folders after Attempt 2 failure
         if: steps.iso_build_2.outcome == 'failure'
         shell: bash
-        run: sudo rm -rf /cache /build-container-installer /home/runner/work/_actions/jasonn3/build-container-installer/container /home/runner/work/_actions/jasonn3/build-container-installer/flatpaks
-
+        run: |
+          sudo rm -rf /cache /build-container-installer
+          cd /home/runner/work/_actions/jasonn3/build-container-installer/main
+          sudo find container flatpaks -mindepth 1 ! -name 'Makefile' -exec rm -rf {} +
+          
       - name: Build ISO (Third Attempt)
         id: iso_build_3
         if: steps.iso_build_2.outcome == 'failure'
