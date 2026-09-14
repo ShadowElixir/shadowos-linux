@@ -71,7 +71,7 @@ jobs:
           maximize_build_space: true
           skip_checkout: true
           build_chunked_oci: true
-          max_layers: 512
+          max_layers: 256
 
       - name: Build Custom Image (Second Attempt)
         id: build_attempt_2
@@ -86,7 +86,7 @@ jobs:
           maximize_build_space: true
           skip_checkout: true
           build_chunked_oci: true
-          max_layers: 512
+          max_layers: 256
 
       - name: Build Custom Image (Third Attempt)
         id: build_attempt_3
@@ -100,4 +100,4 @@ jobs:
           maximize_build_space: true
           skip_checkout: true
           build_chunked_oci: true
-          max_layers: 512
+          max_layers: 256
