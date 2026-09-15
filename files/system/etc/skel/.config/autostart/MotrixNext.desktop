@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=MotrixNext
-Comment=MotrixNextstartup script
-Exec=/usr/bin/motrix-next --autostart
-StartupNotify=false
-Terminal=false
