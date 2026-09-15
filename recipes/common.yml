@@ -90,7 +90,7 @@ modules:
       - bloat.sh
       - uad.sh
       - heroic.sh
-      - motrix.sh
+      - abdm.sh
       - quickgui.sh
       - hv.sh
       
