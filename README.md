@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/shadowelixir/shadowos-linux/actions/workflows/build.yml"><img src="https://github.com/shadowelixir/shadowos-linux/actions/workflows/build.yml/badge.svg" alt="image build badge"/></a>
-  <a href="https://github.com/shadowelixir/shadowos-linux/actions/workflows/build-iso.yml"><img src="https://github.com/shadowelixir/shadowos-linux/actions/workflows/build-iso.yml/badge.svg" alt="iso build badge"/></a>
+  <a href="https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build.yml"><img src="https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build.yml/badge.svg" alt="image build badge"/></a>
+  <a href="https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build-iso.yml"><img src="https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build-iso.yml/badge.svg" alt="iso build badge"/></a>
 </p>
 
 <p align="center">
