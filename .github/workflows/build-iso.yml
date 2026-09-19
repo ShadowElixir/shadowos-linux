@@ -193,7 +193,7 @@ jobs:
           until skopeo copy \
             --retry-times 5 \
             docker://ghcr.io/shadowelixir/${{ steps.meta.outputs.container_image }}:${{ steps.meta.outputs.image_tag }} \
-            oci:/tmp/container-image:${{ steps.meta.outputs.image_tag }}; do
+            oci:${{ github.workspace }}/container-image:${{ steps.meta.outputs.image_tag }}; do
             RETRY_COUNT=$((RETRY_COUNT + 1))
             [ $RETRY_COUNT -ge $MAX_RETRIES ] && exit 1
             echo "Attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying..."
@@ -209,7 +209,7 @@ jobs:
           image_name: ${{ steps.meta.outputs.container_image }}
           image_repo: ghcr.io/shadowelixir 
           image_tag: ${{ steps.meta.outputs.image_tag }}
-          image_src: oci:/tmp/container-image:${{ steps.meta.outputs.image_tag }}
+          image_src: oci:/github/workspace/container-image:${{ steps.meta.outputs.image_tag }}
           version: ${{ steps.clean_version.outputs.stable_one }}
           variant: 'Kinoite'
           additional_templates: '/github/workspace/files/installer/remove_root_password_prompt.tmpl'
@@ -224,7 +224,7 @@ jobs:
         run: |
           sudo rm -rf /cache /build-container-installer
           cd /home/runner/work/_actions/jasonn3/build-container-installer/main
-          sudo find container flatpaks -mindepth 1 ! -name 'Makefile' -exec rm -rf {} +
+          sudo find container flatpaks -mindepth 1 ! -name 'Makefile' -exec rm -rf {} + 2>/dev/null || true
           sleep $((RANDOM % 120 + 30))
 
       - name: Build ISO (Second Attempt)
@@ -237,7 +237,7 @@ jobs:
           image_name: ${{ steps.meta.outputs.container_image }}
           image_repo: ghcr.io/shadowelixir 
           image_tag: ${{ steps.meta.outputs.image_tag }}
-          image_src: oci:/tmp/container-image:${{ steps.meta.outputs.image_tag }}
+          image_src: oci:/github/workspace/container-image:${{ steps.meta.outputs.image_tag }}
           version: ${{ steps.clean_version.outputs.stable_one }}
           variant: 'Kinoite'
           additional_templates: '/github/workspace/files/installer/remove_root_password_prompt.tmpl'
@@ -252,7 +252,7 @@ jobs:
         run: |
           sudo rm -rf /cache /build-container-installer
           cd /home/runner/work/_actions/jasonn3/build-container-installer/main
-          sudo find container flatpaks -mindepth 1 ! -name 'Makefile' -exec rm -rf {} +
+          sudo find container flatpaks -mindepth 1 ! -name 'Makefile' -exec rm -rf {} + 2>/dev/null || true
           sleep $((RANDOM % 120 + 30))
           
       - name: Build ISO (Third Attempt)
@@ -264,7 +264,7 @@ jobs:
           image_name: ${{ steps.meta.outputs.container_image }}
           image_repo: ghcr.io/shadowelixir 
           image_tag: ${{ steps.meta.outputs.image_tag }}
-          image_src: oci:/tmp/container-image:${{ steps.meta.outputs.image_tag }}
+          image_src: oci:/github/workspace/container-image:${{ steps.meta.outputs.image_tag }}
           version: ${{ steps.clean_version.outputs.stable_one }}
           variant: 'Kinoite'
           additional_templates: '/github/workspace/files/installer/remove_root_password_prompt.tmpl'
