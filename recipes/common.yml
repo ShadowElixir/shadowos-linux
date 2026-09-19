@@ -17,6 +17,7 @@ modules:
         - android-tools
         - scrcpy
         - virt-manager
+        - heimdall-frontend
     remove:
       packages:
         - bazaar
