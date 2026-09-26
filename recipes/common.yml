@@ -94,6 +94,7 @@ modules:
       - abdm.sh
       - quickgui.sh
       - hv.sh
+      - keyring.sh
       
   - type: justfiles
     include:
