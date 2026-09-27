@@ -95,11 +95,13 @@ modules:
       - quickgui.sh
       - hv.sh
       - keyring.sh
-      
+      - wgcf.sh
+
   - type: justfiles
     include:
       - scrcpy-cam.just
       - toggle-umip.just
+      - warp.just
 
   - type: kargs
     kargs:
