@@ -96,6 +96,7 @@ modules:
       - hv.sh
       - keyring.sh
       - wgcf.sh
+      - update.sh
 
   - type: justfiles
     include:
