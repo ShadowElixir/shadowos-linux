@@ -63,4 +63,25 @@ ln -s ../.themes/Windows-7-Better/gtk-4.0 /etc/skel/.config/gtk-4.0
 chmod +x /usr/libexec/topgrade/windows-7-gtk-theme-update
 echo '"Windows 7 GTK Theme" = "/usr/libexec/topgrade/windows-7-gtk-theme-update"' >> /etc/ublue-os/topgrade.toml
 
+CONFIG="/etc/bazzite-updater/config.ini"
+APPEND=" \&\& /usr/libexec/topgrade/windows-7-gtk-theme-update"
+
+if [[ ! -f "$CONFIG" ]]; then
+    echo "ERROR: $CONFIG not found" >&2
+    exit 1
+fi
+
+if grep -qP "^systemUpdateCommand=.*windows-7-gtk-theme-update" "$CONFIG"; then
+    echo "Already patched, skipping."
+    exit 0
+fi
+
+if grep -qP "^systemUpdateCommand=" "$CONFIG"; then
+    sed -i "s#^\(systemUpdateCommand=.*\)#\1${APPEND}#" "$CONFIG"
+    echo "Patched systemUpdateCommand in $CONFIG"
+else
+    echo "ERROR: systemUpdateCommand not found in $CONFIG" >&2
+    exit 1
+fi
+
 rm -rf /tmp/win7theme
