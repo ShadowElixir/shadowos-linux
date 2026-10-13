@@ -18,6 +18,7 @@ modules:
         - scrcpy
         - virt-manager
         - heimdall-frontend
+        - python3-devel
     remove:
       packages:
         - bazaar
