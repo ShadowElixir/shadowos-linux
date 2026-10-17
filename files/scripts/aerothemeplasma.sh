@@ -36,8 +36,16 @@ cd ..
 ## theme dependencies
 dnf install -y gcc gcc-c++ cmake make extra-cmake-modules plasma-workspace-devel libksysguard-devel unzip kvantum qt6-qtmultimedia-devel qt6-qt5compat-devel libplasma-devel qt6-qtbase-devel qt6-qtwayland-devel plasma-activities-devel kf6-kpackage-devel kf6-kglobalaccel-devel qt6-qtsvg-devel wayland-devel plasma-wayland-protocols kf6-ksvg-devel kf6-kcrash-devel kf6-kguiaddons-devel kf6-kcmutils-devel kf6-kio-devel kdecoration-devel kf6-ki18n-devel kf6-knotifications-devel kf6-kirigami-devel kf6-kiconthemes-devel gmp-ecm-devel kf5-plasma-devel libepoxy-devel kwin-devel kf6-karchive kf6-karchive-devel plasma-wayland-protocols-devel qt6-qtbase-private-devel qt6-qtbase-devel kf6-knewstuff-devel kf6-knotifyconfig-devel kf6-attica-devel kf6-krunner-devel kf6-kdbusaddons-devel kf6-sonnet-devel plasma5support-devel plasma-activities-stats-devel polkit-qt6-1-devel qt-devel libdrm-devel kf6-kitemmodels-devel kf6-kstatusnotifieritem-devel kf6-frameworkintegration-devel wayland-protocols-devel kscreenlocker-devel ninja-build --setopt=disable_excludes=*
 
-git clone --single-branch https://gitgud.io/aeroshell/atp/aerothemeplasma.git aerothemeplasma
+git clone https://gitgud.io/aeroshell/atp/aerothemeplasma.git aerothemeplasma
 cd aerothemeplasma
+
+## install a different version of the theme depending on the plasma version
+PLASMA_VER=$(rpm -q --qf '%{VERSION}' plasma-workspace | cut -d. -f1,2)
+if git checkout "Plasma/${PLASMA_VER}"; then
+    echo "Using Plasma/${PLASMA_VER}"
+else
+    echo "No Plasma/${PLASMA_VER} ref found, staying on default branch" >&2
+fi
 
 ## fake sudo
 function sudo() { "$@"; }
@@ -69,14 +77,9 @@ APPEND=" \&\& /usr/libexec/topgrade/windows-7-gtk-theme-update"
 if [[ ! -f "$CONFIG" ]]; then
     echo "ERROR: $CONFIG not found" >&2
     exit 1
-fi
-
-if grep -qP "^systemUpdateCommand=.*windows-7-gtk-theme-update" "$CONFIG"; then
+elif grep -qP "^systemUpdateCommand=.*windows-7-gtk-theme-update" "$CONFIG"; then
     echo "Already patched, skipping."
-    exit 0
-fi
-
-if grep -qP "^systemUpdateCommand=" "$CONFIG"; then
+elif grep -qP "^systemUpdateCommand=" "$CONFIG"; then
     sed -i "s#^\(systemUpdateCommand=.*\)#\1${APPEND}#" "$CONFIG"
     echo "Patched systemUpdateCommand in $CONFIG"
 else
