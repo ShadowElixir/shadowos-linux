@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="files/system/usr/share/pixmaps/fedora_whitelogo.svg" 
+    <img src="files/base/usr/share/pixmaps/fedora_whitelogo.svg" 
          alt="ShadowOS" 
          style="height: 140px; width: auto;" />
 </p>
