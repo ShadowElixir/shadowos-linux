@@ -6,84 +6,109 @@ GPUS=("base" "nvidia" "nvidia-legacy")
 STEAMS=("steam" "nosteam")
 CHANNELS=("stable" "beta")
 
-mkdir -p recipes/variants
+OUT="recipes/variants"
+mkdir -p "$OUT"
 
+# ---------- shared helpers ----------
+nvidia_pad() {
+  case "$1" in
+    nvidia)        echo "-nvidia-open" ;;
+    nvidia-legacy) echo "-nvidia" ;;
+    *)             echo "" ;;
+  esac
+}
+
+gpu_desc() {
+  case "$1" in
+    nvidia)        echo "Nvidia " ;;
+    nvidia-legacy) echo "Nvidia Legacy " ;;
+    *)             echo "" ;;
+  esac
+}
+
+gpu_suffix() {
+  [ "$1" = "base" ] && echo "" || echo "-$1"
+}
+
+os_release() {
+  echo
+  echo "  - type: os-release"
+  echo "    properties:"
+  echo "      VARIANT_ID: $1"
+}
+
+# ---------- bazzite ----------
+make_bazzite() {
+  local de=$1 gpu=$2 steam=$3 channel=$4
+
+  local de_name="$de"
+  [ "$de" = "cosmic" ] && de_name="linux"
+
+  local gnome_pad=""
+  [ "$de" != "kde" ] && gnome_pad="-gnome"
+
+  local name="shadowos-${de_name}$(gpu_suffix "$gpu")"
+  [ "$steam" = "steam" ] && name="${name}-steam"
+
+  local file="$name" version="stable"
+  if [ "$channel" = "beta" ]; then
+    file="${name}-beta"
+    version="testing"
+  fi
+
+  {
+    echo "name: ${name}"
+    echo "description: Custom Bazzite $(gpu_desc "$gpu")image with ${de^^} (${channel})."
+    echo "base-image: ghcr.io/ublue-os/bazzite${gnome_pad}$(nvidia_pad "$gpu")"
+    echo "image-version: ${version}"
+
+    if [ "$channel" = "beta" ]; then
+      echo "alt-tags:"
+      echo "  - beta"
+      echo "  - testing"
+      echo "  - unstable"
+    fi
+
+    echo
+    echo "modules:"
+    echo "  - from-file: common-${de}.yml"
+    echo "  - from-file: common-${steam}.yml"
+    os_release "$name"
+
+    if [ "$channel" = "beta" ]; then
+      echo "      RELEASE_TYPE: beta"
+    fi
+  } > "${OUT}/${file}.yml"
+}
+
+# ---------- fedora (lite) ----------
+make_fedora() {
+  local gpu=$1
+  local name="shadowos-lite$(gpu_suffix "$gpu")"
+
+  {
+    echo "name: ${name}"
+    echo "description: Custom Fedora $(gpu_desc "$gpu")lite image."
+    echo "base-image: ghcr.io/blue-build/base-images/fedora-base$(nvidia_pad "$gpu")"
+    echo "image-version: latest"
+    echo
+    echo "modules:"
+    echo "  - from-file: common-lite.yml"
+    os_release "$name"
+  } > "${OUT}/${name}.yml"
+}
+
+# ---------- generate ----------
 for de in "${DES[@]}"; do
   for gpu in "${GPUS[@]}"; do
     for steam in "${STEAMS[@]}"; do
       for channel in "${CHANNELS[@]}"; do
-
-        if [ "$de" = "cosmic" ]; then
-          DE_NAME="linux"
-        else
-          DE_NAME="$de"
-        fi
-        DE_DESC="${de^^}"
-
-        GNOME_PAD=$([ "$de" != "kde" ] && echo "-gnome" || echo "")
-        NVID_PAD=$([ "$gpu" = "nvidia" ] && echo "-nvidia-open" || { [ "$gpu" = "nvidia-legacy" ] && echo "-nvidia" || echo ""; })
-        BASE_IMAGE="ghcr.io/ublue-os/bazzite${GNOME_PAD}${NVID_PAD}"
-
-        IMAGE_NAME="shadowos-${DE_NAME}"
-        if [ "$gpu" != "base" ]; then
-          IMAGE_NAME="${IMAGE_NAME}-${gpu}"
-        fi
-        if [ "$steam" = "steam" ]; then
-          IMAGE_NAME="${IMAGE_NAME}-steam"
-        fi
-
-        RECIPE_FILENAME="${IMAGE_NAME}"
-        if [ "$channel" = "beta" ]; then
-          RECIPE_FILENAME="${IMAGE_NAME}-beta"
-          IMAGE_VERSION="testing"
-        else
-          IMAGE_VERSION="stable"
-        fi
-
-        if [ "$gpu" = "nvidia" ]; then
-          GPU_DESC="Nvidia "
-        elif [ "$gpu" = "nvidia-legacy" ]; then
-          GPU_DESC="Nvidia Legacy "
-        else
-          GPU_DESC=""
-        fi
-
-        DESCRIPTION="Custom Bazzite ${GPU_DESC}image with ${DE_DESC} (${channel})."
-
-        cat <<EOF > "recipes/variants/${RECIPE_FILENAME}.yml"
-name: ${IMAGE_NAME}
-description: ${DESCRIPTION}
-base-image: ${BASE_IMAGE}
-image-version: ${IMAGE_VERSION}
-EOF
-
-        if [ "$channel" = "beta" ]; then
-          cat <<EOF >> "recipes/variants/${RECIPE_FILENAME}.yml"
-alt-tags:
-  - beta
-  - testing
-  - unstable
-EOF
-        fi
-
-        cat <<EOF >> "recipes/variants/${RECIPE_FILENAME}.yml"
-
-modules:
-  - from-file: common-${de}.yml
-  - from-file: common-${steam}.yml
-
-  - type: os-release
-    properties:
-      VARIANT_ID: ${IMAGE_NAME}
-EOF
-
-        if [ "$channel" = "beta" ]; then
-          cat <<EOF >> "recipes/variants/${RECIPE_FILENAME}.yml"
-      RELEASE_TYPE: beta
-EOF
-        fi
-
+        make_bazzite "$de" "$gpu" "$steam" "$channel"
       done
     done
   done
+done
+
+for gpu in "${GPUS[@]}"; do
+  make_fedora "$gpu"
 done

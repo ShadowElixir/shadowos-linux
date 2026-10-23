@@ -1,0 +1,65 @@
+---
+# yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
+modules:
+  - type: files
+    files:
+      - source: base
+        destination: /
+
+  - type: dnf
+    install:
+      packages:
+        - yt-dlp
+        - android-tools
+        
+  - type: default-flatpaks
+    configurations:
+      - notify: false
+        scope: system
+        repo:
+          title: Flathub (system)
+        install:
+          - io.gitlab.librewolf-community
+          - org.qbittorrent.qBittorrent
+          - it.mijorus.gearlever
+          - org.onlyoffice.desktopeditors
+          - com.github.tchx84.Flatseal
+          - io.missioncenter.MissionCenter
+          - com.ranfdev.DistroShelf
+          - io.github.flattool.Warehouse
+          - io.github.peazip.PeaZip
+      - notify: false
+        scope: user
+        repo:
+          title: Flathub (user)
+          
+  - type: os-release
+    properties:
+      NAME: ShadowOS
+      PRETTY_NAME: ShadowOS
+      ID: shadowos
+      RELEASE_TYPE: latest
+      DEFAULT_HOSTNAME: shadowos
+      HOME_URL: https://shadowelixir.github.io/linux
+      DOCUMENTATION_URL: https://github.com/ShadowElixir/shadowos-linux
+      SUPPORT_URL: https://github.com/ShadowElixir/shadowos-linux/issues
+      BUG_REPORT_URL: https://github.com/ShadowElixir/shadowos-linux/issues
+      BOOTLOADER_NAME: ShadowOS
+
+  - type: script
+    snippets:
+      - "chmod +x /usr/bin/setup-librewolf-css"
+      - "chmod +x /usr/bin/hv"
+    scripts:
+      - heroic.sh
+      - abdm.sh
+      - hv.sh
+      - wgcf.sh
+
+  - type: justfiles
+    include:
+      - toggle-umip.just
+      - warp.just
+      
+  - type: initramfs
+  - type: signing

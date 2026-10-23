@@ -1,6 +1,8 @@
 ---
 # yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
 modules:
+  - from-file: base.yml
+
   - type: files
     files:
       - source: system
@@ -13,8 +15,6 @@ modules:
         - zeno/scrcpy
     install:
       packages:
-        - yt-dlp
-        - android-tools
         - scrcpy
         - virt-manager
         - heimdall-frontend
@@ -37,20 +37,11 @@ modules:
         repo:
           title: Flathub (system)
         install:
-          - io.gitlab.librewolf-community
-          - org.qbittorrent.qBittorrent
-          - it.mijorus.gearlever
-          - org.onlyoffice.desktopeditors
-          - com.github.tchx84.Flatseal
-          - io.missioncenter.MissionCenter
-          - com.ranfdev.DistroShelf
-          - io.github.flattool.Warehouse
           - com.vysp3r.ProtonPlus
           - org.gnome.Weather
           - org.gnome.baobab
           - org.gnome.clocks
           - org.gnome.Firmware
-          - io.github.peazip.PeaZip
           - com.obsproject.Studio
           - com.obsproject.Studio.Plugin.BackgroundRemoval
           - com.obsproject.Studio.Plugin.Gstreamer
@@ -64,23 +55,9 @@ modules:
         repo:
           title: Flathub (user)
           
-  - type: os-release
-    properties:
-      NAME: ShadowOS
-      PRETTY_NAME: ShadowOS
-      ID: shadowos
-      RELEASE_TYPE: latest
-      DEFAULT_HOSTNAME: shadowos
-      HOME_URL: https://shadowelixir.github.io/linux
-      DOCUMENTATION_URL: https://github.com/ShadowElixir/shadowos-linux
-      SUPPORT_URL: https://github.com/ShadowElixir/shadowos-linux/issues
-      BUG_REPORT_URL: https://github.com/ShadowElixir/shadowos-linux/issues
-      BOOTLOADER_NAME: ShadowOS
 
   - type: script
     snippets:
-      - "chmod +x /usr/bin/setup-librewolf-css"
-      - "chmod +x /usr/bin/hv"
       - "[ -f /etc/xdg/mimeapps.list ] && sed -i 's|application/vnd.flatpak.ref=io.github.kolunmi.Bazaar.desktop|application/vnd.flatpak.ref=org.gnome.Software.desktop|g' /etc/xdg/mimeapps.list"
       - "ln -sf /usr/bin/gnome-software /usr/bin/bazaar"
       - "ln -sf /opt/Heroic/heroic /usr/bin/lutris"
@@ -91,19 +68,13 @@ modules:
     scripts:
       - bloat.sh
       - uad.sh
-      - heroic.sh
-      - abdm.sh
       - quickgui.sh
-      - hv.sh
       - keyring.sh
-      - wgcf.sh
       - update.sh
 
   - type: justfiles
     include:
       - scrcpy-cam.just
-      - toggle-umip.just
-      - warp.just
 
   - type: kargs
     kargs:
@@ -114,6 +85,3 @@ modules:
     system:
       enabled:
         - bazzite-libvirtd-setup.service
-      
-  - type: initramfs
-  - type: signing

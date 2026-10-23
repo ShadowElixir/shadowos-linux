@@ -1,0 +1,36 @@
+---
+# yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
+modules:
+  - from-file: base.yml
+        
+  - type: dnf
+    repos:
+      cleanup: true
+      copr:
+        - ublue-os/packages
+    install:
+      packages:
+        - gnome-software
+        - icewm
+        - icewm-themes
+        - lightdm
+        - uupd
+    group-install:
+      packages:
+        - lxqt-desktop-environment
+      exclude:
+        - sddm
+
+  - type: justfiles
+    include:
+      - 84-bazzite-virt.just
+      - toggle-autologin.just
+
+  - type: brew
+    brew-analytics: false
+    auto-update: false
+
+  - type: systemd
+    system:
+      enabled:
+        - uupd.timer
