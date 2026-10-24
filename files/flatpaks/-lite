@@ -6,3 +6,10 @@ org.gnome.baobab
 org.gnome.clocks
 org.gnome.Firmware
 com.obsproject.Studio
+com.obsproject.Studio.Plugin.BackgroundRemoval
+com.obsproject.Studio.Plugin.Gstreamer
+com.obsproject.Studio.Plugin.GStreamerVaapi
+com.obsproject.Studio.Plugin.OBSVkCapture
+org.freedesktop.Platform.VulkanLayer.OBSVkCapture
+org.freedesktop.Platform.VulkanLayer.MangoHud
+org.freedesktop.Platform.VulkanLayer.vkBasalt
