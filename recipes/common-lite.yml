@@ -4,23 +4,25 @@ modules:
   - from-file: base.yml
         
   - type: dnf
-    repos:
-      cleanup: true
-      copr:
-        - ublue-os/packages
     install:
       packages:
         - gnome-software
         - icewm
         - icewm-themes
         - lightdm
-        - uupd
+        - dnf5-plugins
     group-install:
       packages:
         - lxqt-desktop-environment
       exclude:
         - sddm
 
+  - type: script
+    snippets:
+      - dnf -y copr enable ublue-os/packages "fedora-$(rpm -E %fedora)-x86_64"
+      - dnf -y install uupd
+      - dnf -y copr remove ublue-os/packages
+      
   - type: justfiles
     include:
       - 84-bazzite-virt.just
