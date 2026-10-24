@@ -185,7 +185,7 @@ jobs:
           VERSION=$(skopeo inspect --config \
             "docker://ghcr.io/shadowelixir/${{ steps.meta.outputs.container_image }}:${{ steps.meta.outputs.image_tag }}" \
             | jq -r '.config.Labels["org.opencontainers.image.version"] // empty' \
-            | grep -oE '^[0-9]+' || true)
+            | grep -oE '[0-9]+' | head -n 1 || true)
 
           # 2. os-release inside the image
           if [ -z "$VERSION" ]; then
