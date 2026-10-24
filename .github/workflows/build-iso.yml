@@ -181,8 +181,9 @@ jobs:
           IMG="oci:${{ github.workspace }}/container-image:${{ steps.meta.outputs.image_tag }}"
           VERSION=""
 
-          # 1. Image label
-          VERSION=$(skopeo inspect --config "$IMG" 2>/dev/null \
+          # 1. Image label (from the registry)
+          VERSION=$(skopeo inspect --config \
+            "docker://ghcr.io/shadowelixir/${{ steps.meta.outputs.container_image }}:${{ steps.meta.outputs.image_tag }}" \
             | jq -r '.config.Labels["org.opencontainers.image.version"] // empty' \
             | grep -oE '^[0-9]+' || true)
 
