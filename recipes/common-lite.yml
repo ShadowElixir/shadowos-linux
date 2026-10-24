@@ -19,12 +19,17 @@ modules:
         - sddm-conf
         - sddm-themes
         - sddm-wayland-miriway
+        - openbox
+        - obconf-qt
+        - dnfdragora-updater
+        - initial-setup-gui
 
   - type: script
     snippets:
       - dnf -y copr enable ublue-os/packages "fedora-$(rpm -E %fedora)-x86_64"
       - dnf -y install uupd
       - dnf -y copr remove ublue-os/packages
+      - sed -i 's/^window_manager=.*/window_manager=icewm/' /etc/lxqt/session.conf
       
   - type: justfiles
     include:
