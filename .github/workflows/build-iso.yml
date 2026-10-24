@@ -78,34 +78,6 @@ jobs:
           echo "date=$(TZ="Asia/Beirut" date +'%Y%m%d')" >> $GITHUB_OUTPUT
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Fetch Fedora Release
-        id: clean_version
-        shell: bash
-        run: |
-          MAX_RETRIES=5
-          RETRY_COUNT=0
-          SUCCESS=false
-          URL="https://fedoraproject.org/releases.json"
-
-          until [ $RETRY_COUNT -ge $MAX_RETRIES ] || [ "$SUCCESS" = true ]; do
-            RESPONSE=$(curl -fsSL "$URL" || echo "failed")
-
-            if [ "$RESPONSE" != "failed" ]; then
-              VERSION=$(echo "$RESPONSE" | grep -oE '"version": "[0-9]+"' | grep -oE '[0-9]+' | sort -rn | head -n 1)
-              if [ -n "$VERSION" ]; then
-                echo "stable_one=$VERSION" >> $GITHUB_OUTPUT
-                SUCCESS=true
-              fi
-            else
-              sleep 10
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-            fi
-          done
-
-          if [ "$SUCCESS" = false ]; then
-            exit 1
-          fi
-
       - name: Resolve Dynamic Flatpak Refs
         id: flatpak_list
         shell: bash
@@ -202,6 +174,58 @@ jobs:
             sleep $((RANDOM % 120 + 30))
           done
 
+      - name: Detect Fedora Version
+        id: clean_version
+        shell: bash
+        run: |
+          IMG="oci:${{ github.workspace }}/container-image:${{ steps.meta.outputs.image_tag }}"
+          VERSION=""
+
+          # 1. Image label
+          VERSION=$(skopeo inspect --config "$IMG" 2>/dev/null \
+            | jq -r '.config.Labels["org.opencontainers.image.version"] // empty' \
+            | grep -oE '^[0-9]+' || true)
+
+          # 2. os-release inside the image
+          if [ -z "$VERSION" ]; then
+            echo "Label not usable, trying os-release..."
+            ID=$(podman pull -q "$IMG" 2>/dev/null || true)
+            if [ -n "$ID" ]; then
+              VERSION=$(podman run --rm --entrypoint sh "$ID" \
+                -c '. /etc/os-release && echo "$VERSION_ID"' 2>/dev/null \
+                | grep -oE '^[0-9]+' || true)
+            fi
+          fi
+
+          # 3. Fallback: latest stable Fedora release
+          if [ -z "$VERSION" ]; then
+            echo "Image detection failed, falling back to releases.json..."
+            MAX_RETRIES=5
+            RETRY_COUNT=0
+            URL="https://fedoraproject.org/releases.json"
+
+            until [ -n "$VERSION" ] || [ $RETRY_COUNT -ge $MAX_RETRIES ]; do
+              RESPONSE=$(curl -fsSL "$URL" || echo "failed")
+
+              if [ "$RESPONSE" != "failed" ]; then
+                VERSION=$(echo "$RESPONSE" | grep -oE '"version": "[0-9]+"' | grep -oE '[0-9]+' | sort -rn | head -n 1 || true)
+              fi
+
+              if [ -z "$VERSION" ]; then
+                sleep 10
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+              fi
+            done
+          fi
+
+          if [ -z "$VERSION" ]; then
+            echo "Could not determine Fedora version" >&2
+            exit 1
+          fi
+
+          echo "Using Fedora $VERSION"
+          echo "stable_one=$VERSION" >> $GITHUB_OUTPUT
+          
       - name: Build ISO (First Attempt)
         id: iso_build_1
         continue-on-error: true
