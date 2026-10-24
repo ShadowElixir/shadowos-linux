@@ -19,6 +19,7 @@
 
 - All the benefits of [Bazzite](https://github.com/ublue-os/bazzite#about--features), [Universal Blue](https://github.com/ublue-os/bazzite#universal-blue) and [Fedora Atomic](https://github.com/ublue-os/bazzite#features-from-fedora-linux-kinoite--silverblue).
 - 4 choices of Desktop Environments (Cosmic, XFCE, KDE and Gnome) instead of just 2 (KDE/Gnome)
+- ShadowOS Lite option based on [BlueBuild Fedora Base](https://github.com/blue-build/base-images) with LXQT and IceWM for old computers
 - Windows 7 theme included in KDE Plasma *([AeroThemePlasma](https://gitgud.io/aeroshell/atp/aerothemeplasma))*
 - Windows XP theme included in XFCE *(slightly tweaked [xfce-winxp-tc](https://github.com/rozniak/xfce-winxp-tc))*
 - Gnome pre-configured with extensions
