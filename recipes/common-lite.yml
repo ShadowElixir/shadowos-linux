@@ -16,6 +16,9 @@ modules:
         - lxqt-desktop-environment
       exclude:
         - sddm
+        - sddm-conf
+        - sddm-themes
+        - sddm-wayland-miriway
 
   - type: script
     snippets:
@@ -36,3 +39,8 @@ modules:
     system:
       enabled:
         - uupd.timer
+
+  - type: os-release
+    properties:
+      VARIANT: Lite
+      VERSION_CODENAME: Lite
