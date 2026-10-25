@@ -4,7 +4,6 @@ org.gnome.Calculator
 org.gnome.Weather
 org.gnome.baobab
 org.gnome.clocks
-org.gnome.Firmware
 com.obsproject.Studio
 com.obsproject.Studio.Plugin.BackgroundRemoval
 com.obsproject.Studio.Plugin.Gstreamer
