@@ -29,8 +29,6 @@ modules:
         - sddm-conf
         - sddm-themes
         - sddm-wayland-miriway
-        - openbox
-        - obconf-qt
         - dnfdragora-updater
         - initial-setup-gui
 
