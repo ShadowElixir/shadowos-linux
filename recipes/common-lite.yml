@@ -9,6 +9,10 @@ modules:
         destination: /usr/lib/tmpfiles.d
         
   - type: dnf
+    remove:
+      packages:
+        - firefox
+        - firefox-langpacks
     install:
       packages:
         - gnome-software
@@ -16,6 +20,7 @@ modules:
         - icewm-themes
         - lightdm
         - dnf5-plugins
+        - lxqt-x11-session
     group-install:
       packages:
         - lxqt-desktop-environment
