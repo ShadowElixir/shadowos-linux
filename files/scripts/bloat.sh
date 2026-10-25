@@ -11,6 +11,7 @@ APPS_TO_HIDE=(
     "org.gnome.Yelp"
     "scrcpy-console"
     "btop"
+    "htop"
     "nvtop"
     "yad-icon-browser"
 )
