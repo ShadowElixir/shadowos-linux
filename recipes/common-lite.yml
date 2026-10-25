@@ -2,6 +2,11 @@
 # yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
 modules:
   - from-file: base.yml
+
+  - type: files
+    files:
+      - source: xfce/usr/lib/tmpfiles.d
+        destination: /usr/lib/tmpfiles.d
         
   - type: dnf
     install:
