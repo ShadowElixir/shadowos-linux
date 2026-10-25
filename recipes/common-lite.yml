@@ -37,6 +37,8 @@ modules:
       - dnf -y copr enable ublue-os/packages "fedora-$(rpm -E %fedora)-x86_64"
       - dnf -y install uupd
       - dnf -y copr remove ublue-os/packages
+    scripts:
+      - bloat.sh
       
   - type: justfiles
     include:

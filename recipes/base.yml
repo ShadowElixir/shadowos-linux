@@ -28,6 +28,7 @@ modules:
           - com.ranfdev.DistroShelf
           - io.github.flattool.Warehouse
           - io.github.peazip.PeaZip
+          - org.gnome.Firmware
       - notify: false
         scope: user
         repo:
@@ -55,6 +56,7 @@ modules:
       - abdm.sh
       - hv.sh
       - wgcf.sh
+      - bloat.sh
 
   - type: justfiles
     include:
