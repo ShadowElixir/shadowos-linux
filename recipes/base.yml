@@ -50,7 +50,6 @@ modules:
   - type: script
     snippets:
       - "chmod +x /usr/bin/setup-librewolf-css"
-      - "chmod +x /usr/bin/hv"
     scripts:
       - heroic.sh
       - abdm.sh

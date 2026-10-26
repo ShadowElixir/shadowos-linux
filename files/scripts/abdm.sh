@@ -10,6 +10,20 @@ DESKTOP_FILE="/usr/share/applications/com.abdownloadmanager.desktop"
 TARGET_DIR="/tmp/abdm-build"
 mkdir -p "$TARGET_DIR"
 
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64|amd64)
+        ARCH_SUFFIX="x64"
+        ;;
+    aarch64|arm64)
+        ARCH_SUFFIX="arm64"
+        ;;
+    *)
+        echo "Error: Unsupported architecture: $ARCH"
+        exit 1
+        ;;
+esac
+
 REDIRECT_URL=$(curl -sL -o /dev/null --connect-timeout 10 -w "%{url_effective}" "https://github.com/amir1376/ab-download-manager/releases/latest")
 TAG_VERSION="${REDIRECT_URL##*/}"
 
@@ -19,7 +33,7 @@ if [ -z "$TAG_VERSION" ] || [ "$TAG_VERSION" = "latest" ]; then
 fi
 
 CLEAN_VERSION="${TAG_VERSION#v}"
-DOWNLOAD_URL="https://github.com/amir1376/ab-download-manager/releases/download/${TAG_VERSION}/${APP_NAME}_${CLEAN_VERSION}_linux_x64.tar.gz"
+DOWNLOAD_URL="https://github.com/amir1376/ab-download-manager/releases/download/${TAG_VERSION}/${APP_NAME}_${CLEAN_VERSION}_linux_${ARCH_SUFFIX}.tar.gz"
 OUTPUT_FILE="${TARGET_DIR}/abdm-latest.tar.gz"
 
 if curl -fL --connect-timeout 10 --retry 3 --retry-delay 2 "$DOWNLOAD_URL" -o "$OUTPUT_FILE"; then

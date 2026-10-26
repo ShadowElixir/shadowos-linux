@@ -92,6 +92,10 @@ make_fedora() {
     echo "base-image: ghcr.io/blue-build/base-images/fedora-base$(nvidia_pad "$gpu")"
     echo "image-version: latest"
     echo
+    echo "platforms:"
+    echo "  - linux/amd64"
+    echo "  - linux/arm64"
+    echo
     echo "modules:"
     echo "  - from-file: common-lite.yml"
     os_release "$name"

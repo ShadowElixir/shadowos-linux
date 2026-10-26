@@ -30,15 +30,25 @@ jobs:
         run: |
           cd recipes
           JSON_DATA=$(find variants -maxdepth 1 -name "*.yml" -type f | jq -R . | jq -cs '
-            map({
-              recipe: .,
-              filename: (split("/")[-1] | split(".yml")[0])
-            })
+            map(
+              . as $recipe |
+              (. | split("/")[-1] | split(".yml")[0]) as $filename |
+              if ($filename | test("lite")) then
+                [
+                  { recipe: $recipe, filename: $filename, arch: "x86_64" },
+                  { recipe: $recipe, filename: $filename, arch: "arm64" }
+                ]
+              else
+                [
+                  { recipe: $recipe, filename: $filename, arch: "x86_64" }
+                ]
+              end
+            ) | flatten
           ')
           echo "matrix=$JSON_DATA" >> $GITHUB_OUTPUT
 
   build:
-    name: Build ISO
+    name: Build ISO (${{ matrix.filename }} - ${{ matrix.arch }})
     needs: generate-iso-matrix
     runs-on: ubuntu-latest
     strategy:
@@ -63,6 +73,7 @@ jobs:
         shell: bash
         run: |
           FILENAME="${{ matrix.filename }}"
+          ARCH="${{ matrix.arch }}"
           
           if [[ "$FILENAME" == *-beta ]]; then
             ISO_NAME="${FILENAME%-beta}"
@@ -75,6 +86,7 @@ jobs:
           echo "container_image=$ISO_NAME" >> $GITHUB_OUTPUT
           echo "full_iso_name=$FILENAME" >> $GITHUB_OUTPUT
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "arch=$ARCH" >> $GITHUB_OUTPUT
           echo "date=$(TZ="Asia/Beirut" date +'%Y%m%d')" >> $GITHUB_OUTPUT
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
@@ -232,7 +244,7 @@ jobs:
         continue-on-error: true
         uses: jasonn3/build-container-installer@main
         with:
-          arch: x86_64
+          arch: ${{ matrix.arch }}
           image_name: ${{ steps.meta.outputs.container_image }}
           image_repo: ghcr.io/shadowelixir 
           image_tag: ${{ steps.meta.outputs.image_tag }}
@@ -241,7 +253,7 @@ jobs:
           variant: 'Kinoite'
           additional_templates: '/github/workspace/files/installer/remove_root_password_prompt.tmpl'
           flatpak_remote_refs: ${{ steps.flatpak_list.outputs.refs }}
-          iso_name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
+          iso_name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
           enable_cache_dnf: "false"
           enable_cache_skopeo: "false"
 
@@ -260,7 +272,7 @@ jobs:
         continue-on-error: true
         uses: jasonn3/build-container-installer@main
         with:
-          arch: x86_64
+          arch: ${{ matrix.arch }}
           image_name: ${{ steps.meta.outputs.container_image }}
           image_repo: ghcr.io/shadowelixir 
           image_tag: ${{ steps.meta.outputs.image_tag }}
@@ -269,7 +281,7 @@ jobs:
           variant: 'Kinoite'
           additional_templates: '/github/workspace/files/installer/remove_root_password_prompt.tmpl'
           flatpak_remote_refs: ${{ steps.flatpak_list.outputs.refs }}
-          iso_name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
+          iso_name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
           enable_cache_dnf: "false"
           enable_cache_skopeo: "false"
 
@@ -287,7 +299,7 @@ jobs:
         if: steps.iso_build_2.outcome == 'failure'
         uses: jasonn3/build-container-installer@main
         with:
-          arch: x86_64
+          arch: ${{ matrix.arch }}
           image_name: ${{ steps.meta.outputs.container_image }}
           image_repo: ghcr.io/shadowelixir 
           image_tag: ${{ steps.meta.outputs.image_tag }}
@@ -296,7 +308,7 @@ jobs:
           variant: 'Kinoite'
           additional_templates: '/github/workspace/files/installer/remove_root_password_prompt.tmpl'
           flatpak_remote_refs: ${{ steps.flatpak_list.outputs.refs }}
-          iso_name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
+          iso_name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
           enable_cache_dnf: "false"
           enable_cache_skopeo: "false"
 
@@ -316,8 +328,8 @@ jobs:
         uses: actions/upload-artifact@main
         with:
           path: |
-            ${{ steps.final_path.outputs.iso_path }}/${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
-            ${{ steps.final_path.outputs.iso_path }}/${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso-CHECKSUM
-          name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.zip
+            ${{ steps.final_path.outputs.iso_path }}/${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
+            ${{ steps.final_path.outputs.iso_path }}/${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso-CHECKSUM
+          name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.zip
           retention-days: 4
           compression-level: 0
