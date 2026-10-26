@@ -84,7 +84,7 @@ You can download the latest ISO file from:
 <details>
 <summary><b>First, make an environment variable for the variant of your choice</b></summary>
 
-First, select your gpu:
+- First, select your gpu:
 
 <details>
 <summary><b>AMD/Intel</b></summary>
@@ -110,12 +110,12 @@ GPU=-nvidia-legacy
 ```
 </details>
 
-Then, pick your base:
+- Then, pick your base:
 
 <details>
 <summary><b>Bazzite-based (Recommended, supports only x86-64)</b></summary>
 
-Now, pick a desktop environment:
+- Now, pick a desktop environment:
 
 <details>
 <summary><b>Cosmic (Recommended)</b></summary>
@@ -149,7 +149,7 @@ DE=xfce
 ```
 </details>
 
-After that, choose if you would like steam or not:
+- After that, choose if you would like steam or not:
 
 <details>
 <summary><b>Steam</b></summary>
@@ -167,7 +167,7 @@ STEAM=
 ```
 </details>
 
-Then, pick your release channel:
+- Then, pick your release channel:
 
 <details>
 <summary><b>Stable</b></summary>
@@ -185,7 +185,7 @@ RELEASE=beta
 ```
 </details>
 
-Then, run this command:
+- Then, run this command:
 ```bash
 VARIANT="shadowos-${DE}${GPU}${STEAM}:${RELEASE}"
 ```
@@ -195,7 +195,7 @@ VARIANT="shadowos-${DE}${GPU}${STEAM}:${RELEASE}"
 <details>
 <summary><b>Fedora-based (Lite version, made for old or slow computers, supports x86-64/arm64)</b></summary>
 
-Run this command:
+- Run this command:
 ```bash
 VARIANT="shadowos-lite${GPU}:latest"
 ```
