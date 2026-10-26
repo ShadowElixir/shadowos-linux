@@ -43,9 +43,11 @@ fi
 
 DESKTOP_WINDOW_FILE="shell/desktop/src/window.c"
 if [ -f "$DESKTOP_WINDOW_FILE" ]; then
-    sed -i '/\/\/ Rough watermark drawing/,/if (wnd->shext_host)/ {
-        s/if (wnd->shext_host)/if (0 \&\& wnd->shext_host)/
+    sed -i '/\/\/ Rough watermark drawing/,/if (wnd->is_primary)/ {
+        s/if (wnd->is_primary)/if (0 \&\& wnd->is_primary)/
     }' "$DESKTOP_WINDOW_FILE"
+    grep -q 'if (0 && wnd->is_primary)' "$DESKTOP_WINDOW_FILE" \
+        || { echo "Watermark patch did not apply" >&2; exit 1; }
 fi
 
 CLOCK_FILE="shell/taskband/src/systray/clock.c"
