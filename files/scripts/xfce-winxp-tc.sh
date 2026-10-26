@@ -1,74 +1,98 @@
 #!/usr/bin/env bash
-set -oue pipefail
+set -euo pipefail
 
-git clone --depth=1 --single-branch https://github.com/rozniak/xfce-winxp-tc.git /tmp/xfce-winxp-tc
-cd /tmp/xfce-winxp-tc
+die() { echo "ERROR: $*" >&2; exit 1; }
+
+REPO_DIR=/tmp/xfce-winxp-tc
+
+git clone --depth=1 --single-branch https://github.com/rozniak/xfce-winxp-tc.git "$REPO_DIR"
+cd "$REPO_DIR"
 
 PLYMOUTH_CMAKE="base/bootvid/plymouth.cmake"
-if [ -f "$PLYMOUTH_CMAKE" ]; then
-    awk '
-    /# Pick sources based on SKU/ {
-        print "# Pick sources based on SKU (Hardcoded XP Pro)"
-        print "set(PLYMOUTH_THEME_NAME whistler)"
-        print "set(PLYMOUTH_IMAGE_SPLASH splshclt.png)"
-        print "set(PLYMOUTH_IMAGE_CHUNKS chunkpro.png)"
-        print "set(PLYMOUTH_IMAGE_SKU skupro.png)"
-        skip = 1; next
-    }
-    skip {
-        if ($0 ~ /^endif\(\)/) { skip = 0; next }
-        next
-    }
-    { print }
-    ' "$PLYMOUTH_CMAKE" > "$PLYMOUTH_CMAKE.tmp" && mv "$PLYMOUTH_CMAKE.tmp" "$PLYMOUTH_CMAKE"
-fi
-
 DESKTOP_VIEW_FILE="shared/shell/src/vwdesk.c"
-if [ -f "$DESKTOP_VIEW_FILE" ]; then
-    awk '
-    /for \(gulong i = 0; i < G_N_ELEMENTS\(S_DESKTOP_ITEMS\); i\+\+\)/,/^    \}/ {
-        if ($0 ~ /for \(/) {
-            print "    /* Skipping static item registration"
-        }
-        print $0
-        if ($0 ~ /^    \}/) {
-            print "    */"
-            next
-        }
+DESKTOP_WINDOW_FILE="shell/desktop/src/window.c"
+CLOCK_FILE="shell/taskband/src/systray/clock.c"
+
+# Check if files exist
+for f in "$PLYMOUTH_CMAKE" "$DESKTOP_VIEW_FILE" "$DESKTOP_WINDOW_FILE" "$CLOCK_FILE"; do
+    [ -f "$f" ] || die "Missing expected file: $f"
+done
+
+# --- Plymouth: hardcode XP Pro splash ---
+awk '
+/# Pick sources based on SKU/ {
+    print "# Pick sources based on SKU (Hardcoded XP Pro)"
+    print "set(PLYMOUTH_THEME_NAME whistler)"
+    print "set(PLYMOUTH_IMAGE_SPLASH splshclt.png)"
+    print "set(PLYMOUTH_IMAGE_CHUNKS chunkpro.png)"
+    print "set(PLYMOUTH_IMAGE_SKU skupro.png)"
+    skip = 1; next
+}
+skip {
+    if ($0 ~ /^endif\(\)/) { skip = 0; next }
+    next
+}
+{ print }
+' "$PLYMOUTH_CMAKE" > "$PLYMOUTH_CMAKE.tmp" && mv "$PLYMOUTH_CMAKE.tmp" "$PLYMOUTH_CMAKE"
+grep -q 'Hardcoded XP Pro' "$PLYMOUTH_CMAKE" || die "Plymouth patch did not apply"
+grep -q 'WINTC_SKU' "$PLYMOUTH_CMAKE" && die "Plymouth patch left SKU logic behind"
+
+# --- Desktop icons: skip static item registration ---
+awk '
+/for \(gulong i = 0; i < G_N_ELEMENTS\(S_DESKTOP_ITEMS\); i\+\+\)/,/^    \}/ {
+    if ($0 ~ /for \(/) {
+        print "    /* Skipping static item registration"
+    }
+    print $0
+    if ($0 ~ /^    \}/) {
+        print "    */"
         next
     }
-    { print }
-    ' "$DESKTOP_VIEW_FILE" > "$DESKTOP_VIEW_FILE.tmp" && mv "$DESKTOP_VIEW_FILE.tmp" "$DESKTOP_VIEW_FILE"
-fi
+    next
+}
+{ print }
+' "$DESKTOP_VIEW_FILE" > "$DESKTOP_VIEW_FILE.tmp" && mv "$DESKTOP_VIEW_FILE.tmp" "$DESKTOP_VIEW_FILE"
+grep -q 'Skipping static item registration' "$DESKTOP_VIEW_FILE" || die "Desktop items patch did not apply"
+[ "$(grep -c 'Skipping static item registration' "$DESKTOP_VIEW_FILE")" -eq 1 ] || die "Desktop items patch applied more than once"
+grep -q '^    \*/$' "$DESKTOP_VIEW_FILE" || die "Desktop items patch has no closing comment"
 
-DESKTOP_WINDOW_FILE="shell/desktop/src/window.c"
-if [ -f "$DESKTOP_WINDOW_FILE" ]; then
-    sed -i '/\/\/ Rough watermark drawing/,/if (wnd->is_primary)/ {
-        s/if (wnd->is_primary)/if (0 \&\& wnd->is_primary)/
-    }' "$DESKTOP_WINDOW_FILE"
-    grep -q 'if (0 && wnd->is_primary)' "$DESKTOP_WINDOW_FILE" \
-        || { echo "Watermark patch did not apply" >&2; exit 1; }
-fi
+# --- Desktop watermark ---
+sed -i '/\/\/ Rough watermark drawing/,/if (wnd->is_primary)/ {
+    s/if (wnd->is_primary)/if (0 \&\& wnd->is_primary)/
+}' "$DESKTOP_WINDOW_FILE"
+grep -q 'if (0 && wnd->is_primary)' "$DESKTOP_WINDOW_FILE" || die "Watermark patch did not apply"
 
-CLOCK_FILE="shell/taskband/src/systray/clock.c"
-if [ -f "$CLOCK_FILE" ]; then
-    awk '
-    /g_date_time_format\(time, "%H:%M"\)/ {
-        sub(/g_date_time_format\(time, "%H:%M"\)/, "g_date_time_format(time, \"%b %-e, %-l:%M %p\")")
-    }
-    { print }
-    ' "$CLOCK_FILE" > "$CLOCK_FILE.tmp" && mv "$CLOCK_FILE.tmp" "$CLOCK_FILE"
-fi
+# --- Clock format ---
+awk '
+/g_date_time_format\(time, "%H:%M"\)/ {
+    sub(/g_date_time_format\(time, "%H:%M"\)/, "g_date_time_format(time, \"%b %-e, %-l:%M %p\")")
+}
+{ print }
+' "$CLOCK_FILE" > "$CLOCK_FILE.tmp" && mv "$CLOCK_FILE.tmp" "$CLOCK_FILE"
+grep -q '%b %-e, %-l:%M %p' "$CLOCK_FILE" || die "Clock patch did not apply"
 
+# --- Build and install ---
 cd packaging
-dnf install -y --setopt=disable_excludes=* $(./chkdeps.sh -l | cut -d':' -f2 | tr '\n' ' ')
+
+DEPS=$(./chkdeps.sh -l | cut -d':' -f2 | tr '\n' ' ')
+[ -n "${DEPS// /}" ] || die "chkdeps.sh returned no dependencies"
+dnf install -y --setopt=disable_excludes=* $DEPS
+
 ./buildall.sh
+
 cd xptc
-find . -name "*.rpm" -exec dnf install -y {} +
+mapfile -t RPMS < <(find . -name "*.rpm")
+[ "${#RPMS[@]}" -gt 0 ] || die "buildall.sh produced no RPMs"
+dnf install -y "${RPMS[@]}"
 
-if [ -f /etc/lightdm/lightdm.conf ]; then
-    sed -i 's/^#greeter-session=.*/greeter-session=wintc-logonui/' /etc/lightdm/lightdm.conf
-fi
+# --- LightDM greeter ---
+[ -f /etc/lightdm/lightdm.conf ] || die "/etc/lightdm/lightdm.conf not found"
+sed -i 's/^#greeter-session=.*/greeter-session=wintc-logonui/' /etc/lightdm/lightdm.conf
+grep -q '^greeter-session=wintc-logonui' /etc/lightdm/lightdm.conf || die "greeter-session was not set"
 
+# --- Plymouth theme ---
 plymouth-set-default-theme bootvid
-rm -rf /tmp/xfce-winxp-tc
+[ "$(plymouth-set-default-theme)" = "bootvid" ] || die "Plymouth theme was not set to bootvid"
+
+rm -rf "$REPO_DIR"
+echo "XP theme build complete"
