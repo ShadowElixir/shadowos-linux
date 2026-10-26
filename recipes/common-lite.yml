@@ -5,6 +5,8 @@ modules:
 
   - type: files
     files:
+      - source: lite
+        destination: /
       - source: xfce/usr/lib/tmpfiles.d
         destination: /usr/lib/tmpfiles.d
         
