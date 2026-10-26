@@ -204,7 +204,7 @@ VARIANT="shadowos-lite${GPU}:latest"
 
 </details>
 
-After that, either:
+- After that, either:
 
 <details>
 <summary><b>Rebase an existing atomic Fedora installation to the latest build</b></summary>
@@ -230,9 +230,15 @@ After that, either:
 
 <details>
 <summary><b>Rebase an existing ShadowOS Linux installation to another variant</b></summary>
-
+    
+- Run this command:
+    
   ```
   rpm-ostree rebase ostree-image-signed:docker://ghcr.io/shadowelixir/$VARIANT
+  ```
+- Reboot to complete the rebase:
+  ```
+  systemctl reboot
   ```
 </details>
 
