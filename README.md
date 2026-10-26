@@ -84,7 +84,38 @@ You can download the latest ISO file from:
 <details>
 <summary><b>First, make an environment variable for the variant of your choice</b></summary>
 
-First, pick a desktop environment:
+First, select your gpu:
+
+<details>
+<summary><b>AMD/Intel</b></summary>
+
+```bash
+GPU=
+```
+</details>
+
+<details>
+<summary><b>NVIDIA (GTX 16xx and RTX series)</b></summary>
+
+```bash
+GPU=-nvidia
+```
+</details>
+
+<details>
+<summary><b>NVIDIA Legacy (GTX 745 and later)</b></summary>
+
+```bash
+GPU=-nvidia-legacy
+```
+</details>
+
+Then, pick your base:
+
+<details>
+<summary><b>Bazzite-based (Recommended, supports only x86-64)</b></summary>
+
+Now, pick a desktop environment:
 
 <details>
 <summary><b>Cosmic (Recommended)</b></summary>
@@ -115,32 +146,6 @@ DE=kde
 
 ```bash
 DE=xfce
-```
-</details>
-
-Then, select your gpu:
-
-<details>
-<summary><b>AMD/Intel</b></summary>
-
-```bash
-GPU=
-```
-</details>
-
-<details>
-<summary><b>NVIDIA (GTX 16xx and RTX series)</b></summary>
-
-```bash
-GPU=-nvidia
-```
-</details>
-
-<details>
-<summary><b>NVIDIA Legacy (GTX 745 and later)</b></summary>
-
-```bash
-GPU=-nvidia-legacy
 ```
 </details>
 
@@ -184,6 +189,18 @@ Then, run this command:
 ```bash
 VARIANT="shadowos-${DE}${GPU}${STEAM}:${RELEASE}"
 ```
+
+</details>
+
+<details>
+<summary><b>Fedora-based (Lite version, made for old or slow computers, supports x86-64/arm64)</b></summary>
+
+Run this command:
+```bash
+VARIANT="shadowos-lite${GPU}:latest"
+```
+
+</details>
 
 </details>
 
