@@ -21,7 +21,7 @@ kernel_pkgs=(
 dnf -y versionlock delete "${kernel_pkgs[@]}" || :
 dnf --setopt=protect_running_kernel=False -y remove "${kernel_pkgs[@]}"
 (cd /usr/lib/modules && rm -rf -- ./*)
-dnf -y --repo fedora,updates --setopt=tsflags=noscripts install kernel kernel-core
+dnf -y --repo fedora,updates --setopt=tsflags=noscripts --setopt=disable_excludes=* install kernel kernel-core
 kernel=$(find /usr/lib/modules -maxdepth 1 -mindepth 1 -type d -printf '%P\n' | grep .)
 depmod "$kernel"
 
