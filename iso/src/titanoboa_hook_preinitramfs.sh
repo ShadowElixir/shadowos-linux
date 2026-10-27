@@ -159,15 +159,15 @@ KICKSTART
         ublue-os-media-automount.service \
         ublue-system-setup.service \
         check-sb-key.service; do
-        systemctl disable $s
+        systemctl disable "$s" 2>/dev/null || true
     done
 
     for s in \
         ublue-flatpak-manager.service \
         podman-auto-update.timer \
         ublue-user-setup.service; do
-        systemctl --global disable $s
-    done
+        systemctl --global disable "$s" 2>/dev/null || true
+    :
 )
 
 # Dont start Steam at login, and remove packages that shouldnt be used in a live session
