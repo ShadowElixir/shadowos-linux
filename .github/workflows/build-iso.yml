@@ -317,13 +317,6 @@ jobs:
           image-ref: localhost/shadowos-live:build
           iso-dest: ${{ github.workspace }}/${{ steps.iso_name.outputs.iso_file }}
 
-      - name: Clean folders after Attempt 1 failure
-        if: steps.iso_build_1.outcome == 'failure'
-        shell: bash
-        run: |
-          sudo find /home/runner/work/_actions/ublue-os/titanoboa -maxdepth 2 -name output -type d -exec rm -rf {} + 2>/dev/null || true
-          sleep $((RANDOM % 120 + 30))
-
       - name: Build ISO (Second Attempt)
         id: iso_build_2
         if: steps.iso_build_1.outcome == 'failure'
@@ -332,13 +325,6 @@ jobs:
         with:
           image-ref: localhost/shadowos-live:build
           iso-dest: ${{ github.workspace }}/${{ steps.iso_name.outputs.iso_file }}
-
-      - name: Clean folders after Attempt 2 failure
-        if: steps.iso_build_2.outcome == 'failure'
-        shell: bash
-        run: |
-          sudo find /home/runner/work/_actions/ublue-os/titanoboa -maxdepth 2 -name output -type d -exec rm -rf {} + 2>/dev/null || true
-          sleep $((RANDOM % 120 + 30))
 
       - name: Build ISO (Third Attempt)
         id: iso_build_3
