@@ -188,6 +188,4 @@ if [ "$NVIDIA" = "true" ]; then
         dnf -yq reinstall --allowerasing $pkg ||
             dnf -yq install --allowerasing $pkg || :
     done
-    ls /usr/share/vulkan/icd.d/nouveau_icd.*.json >/dev/null 2>&1 ||
-        echo "::warning::No nouveau vulkan icds found in the live image"
 fi
