@@ -80,6 +80,7 @@ if [ "$(echo "$kernels" | wc -l)" -ne 1 ] || [ -z "$kernels" ]; then
     exit 1
 fi
 kernel="$kernels"
+
 DRACUT_NO_XATTR=1 dracut -v --force --zstd --reproducible --no-hostonly \
     --add "dmsquash-live dmsquash-live-autooverlay" \
     "/usr/lib/modules/${kernel}/initramfs.img" "${kernel}"
@@ -97,6 +98,11 @@ if [ ! -f "/usr/lib/modules/${kernel}/vmlinuz" ]; then
         exit 1
     fi
 fi
+
+# Safeguard: Ensure a clean, single symlink/fallback directory exists so the wildcard '*' never misses
+mkdir -p /usr/lib/modules/default
+ln -sf "/usr/lib/modules/${kernel}/initramfs.img" /usr/lib/modules/default/initramfs.img
+ln -sf "/usr/lib/modules/${kernel}/vmlinuz" /usr/lib/modules/default/vmlinuz
 
 # ----------------------------------------------------------- live session
 dnf install -y livesys-scripts
