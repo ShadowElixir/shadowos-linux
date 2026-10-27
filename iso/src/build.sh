@@ -84,6 +84,19 @@ DRACUT_NO_XATTR=1 dracut -v --force --zstd --reproducible --no-hostonly \
     --add "dmsquash-live dmsquash-live-autooverlay" \
     "/usr/lib/modules/${kernel}/initramfs.img" "${kernel}"
 
+# Ensure initramfs.img is explicitly present for titanoboa
+if [ ! -f "/usr/lib/modules/${kernel}/initramfs.img" ]; then
+    if [ -f "/usr/lib/modules/${kernel}/initramfs-${kernel}.img" ]; then
+        cp -v "/usr/lib/modules/${kernel}/initramfs-${kernel}.img" "/usr/lib/modules/${kernel}/initramfs.img"
+    else
+        # Find any generated initramfs file in that directory and copy/rename it
+        found_initrd=$(find "/usr/lib/modules/${kernel}" -name "initramfs*.img" | head -n 1)
+        if [ -n "$found_initrd" ]; then
+            cp -v "$found_initrd" "/usr/lib/modules/${kernel}/initramfs.img"
+        fi
+    fi
+fi
+
 # ----------------------------------------------------------- live session
 dnf install -y livesys-scripts
 
