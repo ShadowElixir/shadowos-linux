@@ -84,16 +84,17 @@ DRACUT_NO_XATTR=1 dracut -v --force --zstd --reproducible --no-hostonly \
     --add "dmsquash-live dmsquash-live-autooverlay" \
     "/usr/lib/modules/${kernel}/initramfs.img" "${kernel}"
 
-# Ensure initramfs.img is explicitly present for titanoboa
-if [ ! -f "/usr/lib/modules/${kernel}/initramfs.img" ]; then
-    if [ -f "/usr/lib/modules/${kernel}/initramfs-${kernel}.img" ]; then
-        cp -v "/usr/lib/modules/${kernel}/initramfs-${kernel}.img" "/usr/lib/modules/${kernel}/initramfs.img"
+# Ensure vmlinuz is located at /usr/lib/modules/${kernel}/vmlinuz as required by Titanoboa
+if [ ! -f "/usr/lib/modules/${kernel}/vmlinuz" ]; then
+    found_vmlinuz=$(find /boot -name "vmlinuz-${kernel}" -o -name "vmlinuz" | head -n 1)
+    if [ -z "$found_vmlinuz" ]; then
+        found_vmlinuz=$(find /lib/modules/${kernel} -name "vmlinuz" | head -n 1)
+    fi
+    if [ -n "$found_vmlinuz" ]; then
+        cp -v "$found_vmlinuz" "/usr/lib/modules/${kernel}/vmlinuz"
     else
-        # Find any generated initramfs file in that directory and copy/rename it
-        found_initrd=$(find "/usr/lib/modules/${kernel}" -name "initramfs*.img" | head -n 1)
-        if [ -n "$found_initrd" ]; then
-            cp -v "$found_initrd" "/usr/lib/modules/${kernel}/initramfs.img"
-        fi
+        echo "::error::Could not find vmlinuz for kernel ${kernel}"
+        exit 1
     fi
 fi
 
