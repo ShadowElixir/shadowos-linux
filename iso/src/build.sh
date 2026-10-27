@@ -66,11 +66,17 @@ else
     done
 fi
 
-# ---------------------------------------------------------- kernel/initramfs
+# ---------------------------------------------------------- kernel swap
+# Swap the (Bazzite) kernel for the stock Fedora one BEFORE dracut runs.
+# If dracut runs first it generates an initramfs for a kernel directory that
+# the swap then deletes, leaving the new kernel without an initramfs -- which
+# is exactly what makes Titanoboa fail with:
+#   cp: cannot stat '/rootfs/usr/lib/modules/*/initramfs.img': No such file or directory
 if [ "$FLAVOR" = "bazzite" ]; then
     bash "$SCRIPT_DIR/titanoboa_hook_preinitramfs.sh"
 fi
 
+# ---------------------------------------------------------- initramfs
 dnf install -y dracut-live
 
 # Titanoboa expects exactly one kernel in /usr/lib/modules
@@ -99,10 +105,11 @@ if [ ! -f "/usr/lib/modules/${kernel}/vmlinuz" ]; then
     fi
 fi
 
-# Safeguard: Ensure a clean, single symlink/fallback directory exists so the wildcard '*' never misses
-mkdir -p /usr/lib/modules/default
-ln -sf "/usr/lib/modules/${kernel}/initramfs.img" /usr/lib/modules/default/initramfs.img
-ln -sf "/usr/lib/modules/${kernel}/vmlinuz" /usr/lib/modules/default/vmlinuz
+# Sanity check: Titanoboa's glob expects this exact path to exist
+if [ ! -f "/usr/lib/modules/${kernel}/initramfs.img" ]; then
+    echo "::error::dracut did not produce /usr/lib/modules/${kernel}/initramfs.img"
+    exit 1
+fi
 
 # ----------------------------------------------------------- live session
 dnf install -y livesys-scripts
