@@ -1,0 +1,12 @@
+# Read by Titanoboa to build the ISO's GRUB menu.
+# The label is the ISO volume ID (max 32 characters) and must match CDLABEL below.
+label: "SHADOWOS-LIVE"
+grub2:
+  timeout: 10
+  entries:
+    - name: "ShadowOS Live ISO"
+      linux: "/images/pxeboot/vmlinuz quiet rhgb root=live:CDLABEL=SHADOWOS-LIVE enforcing=0 rd.live.image"
+      initrd: "/images/pxeboot/initrd.img"
+    - name: "ShadowOS Live ISO (Safe Graphics Mode)"
+      linux: "/images/pxeboot/vmlinuz quiet rhgb root=live:CDLABEL=SHADOWOS-LIVE enforcing=0 rd.live.image nomodeset"
+      initrd: "/images/pxeboot/initrd.img"

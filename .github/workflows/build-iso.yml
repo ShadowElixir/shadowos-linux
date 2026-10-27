@@ -24,33 +24,52 @@ jobs:
         shell: bash
         run: bash ./files/scripts/generate-recipe.sh
 
+      - name: Detect ARM runner label
+        id: arm
+        shell: bash
+        run: |
+          . /etc/os-release
+          echo "label=ubuntu-${VERSION_ID}-arm" >> $GITHUB_OUTPUT
+
       - name: Parse Recipe Files for ISOs
         id: set-matrix
         shell: bash
+        env:
+          ARM_RUNNER: ${{ vars.ARM_RUNNER_LABEL || steps.arm.outputs.label }}
         run: |
           cd recipes
-          JSON_DATA=$(find variants -maxdepth 1 -name "*.yml" -type f | jq -R . | jq -cs '
-            map(
-              . as $recipe |
-              (. | split("/")[-1] | split(".yml")[0]) as $filename |
-              if ($filename | test("lite")) then
-                [
-                  { recipe: $recipe, filename: $filename, arch: "x86_64" },
-                  { recipe: $recipe, filename: $filename, arch: "arm64" }
-                ]
-              else
-                [
-                  { recipe: $recipe, filename: $filename, arch: "x86_64" }
-                ]
-              end
-            ) | flatten
-          ')
+          JSON_DATA=$(
+            for recipe in variants/*.yml; do
+              filename=$(basename "$recipe" .yml)
+
+              desktop=$(grep -m1 -oP '^\s*- from-file: common-\K(?!steam\.|nosteam\.)[a-z0-9]+(?=\.yml)' "$recipe" || true)
+              base=$(sed -n 's/^base-image: *//p' "$recipe")
+              [ -n "$desktop" ] && [ -n "$base" ] || { echo "Could not read desktop/base image from $recipe" >&2; exit 1; }
+
+              case "$base" in *ublue-os/bazzite*) flavor=bazzite ;; *) flavor=lite ;; esac
+              case "$base" in *nvidia*) nvidia=true ;; *) nvidia=false ;; esac
+
+              # lite also gets an arm64 ISO
+              archs="x86_64"
+              [ "$desktop" = "lite" ] && archs="x86_64 arm64"
+
+              for arch in $archs; do
+                runner="ubuntu-latest"
+                [ "$arch" = "arm64" ] && runner="$ARM_RUNNER"
+                jq -nc \
+                  --arg recipe "$recipe" --arg filename "$filename" --arg arch "$arch" \
+                  --arg flavor "$flavor" --arg desktop "$desktop" --arg nvidia "$nvidia" \
+                  --arg runner "$runner" \
+                  '{recipe: $recipe, filename: $filename, arch: $arch, flavor: $flavor, desktop: $desktop, nvidia: $nvidia, runner: $runner}'
+              done
+            done | jq -cs .
+          )
           echo "matrix=$JSON_DATA" >> $GITHUB_OUTPUT
 
   build:
     name: Build ISO (${{ matrix.filename }} - ${{ matrix.arch }})
     needs: generate-iso-matrix
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
@@ -61,9 +80,25 @@ jobs:
       id-token: write
     steps:
       - name: Maximize build space
+        if: matrix.arch == 'x86_64'
         uses: jlumbroso/free-disk-space@main
-        with:    
-          preinstalled-runtimes: true
+        with:
+          tool-cache: true
+
+      - name: Mount Container Storage BTRFS Loopback
+        if: matrix.arch == 'x86_64'
+        shell: bash
+        run: |
+          sudo truncate -s 110G /mnt/podman-storage.img
+          sudo mkfs.btrfs -f -m single -d single /mnt/podman-storage.img
+          sudo podman system reset --force
+          sudo systemctl stop podman.service
+          LOOP=$(sudo losetup --find --show --direct-io=on /mnt/podman-storage.img)
+          sudo mkdir -p /mnt/podman-storage
+          sudo mount -o compress-force=zstd:2,discard=async,noatime "$LOOP" /mnt/podman-storage
+          sudo mkdir -p /mnt/podman-storage/storage /mnt/podman-storage/tmp
+          sudo mount --bind /mnt/podman-storage/storage /var/lib/containers/storage
+          sudo systemctl start podman.service
 
       - name: Checkout
         uses: actions/checkout@main
@@ -83,7 +118,16 @@ jobs:
             IMAGE_TAG="latest"
           fi
 
+          # What the live image needs to know about this variant
+          FLAVOR="${{ matrix.flavor }}"
+          DESKTOP="${{ matrix.desktop }}"
+          NVIDIA="${{ matrix.nvidia }}"
+
           echo "container_image=$ISO_NAME" >> $GITHUB_OUTPUT
+          echo "image_ref=ghcr.io/shadowelixir/$ISO_NAME" >> $GITHUB_OUTPUT
+          echo "flavor=$FLAVOR" >> $GITHUB_OUTPUT
+          echo "desktop=$DESKTOP" >> $GITHUB_OUTPUT
+          echo "nvidia=$NVIDIA" >> $GITHUB_OUTPUT
           echo "full_iso_name=$FILENAME" >> $GITHUB_OUTPUT
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "arch=$ARCH" >> $GITHUB_OUTPUT
@@ -169,17 +213,17 @@ jobs:
           FINAL_REFS=$(echo "$FINAL_REFS" | xargs)
           echo "refs=$FINAL_REFS" >> $GITHUB_OUTPUT
 
-      - name: Pre-pull Container Image
+          # One ref per line for the live image build (refs are x86_64, swap for arm64)
+          FLATPAK_ARCH="x86_64"
+          [ "${{ matrix.arch }}" == "arm64" ] && FLATPAK_ARCH="aarch64"
+          echo "$FINAL_REFS" | tr ' ' '\n' | sed "s#/x86_64/#/$FLATPAK_ARCH/#" | grep . > iso/src/flatpaks || true
+
+      - name: Pull Container Image
         shell: bash
         run: |
-          sudo mkdir -p /github
-          sudo ln -s ${{ github.workspace }} /github/workspace
           MAX_RETRIES=10
           RETRY_COUNT=0
-          until skopeo copy \
-            --retry-times 5 \
-            docker://ghcr.io/shadowelixir/${{ steps.meta.outputs.container_image }}:${{ steps.meta.outputs.image_tag }} \
-            oci:/github/workspace/container-image:${{ steps.meta.outputs.image_tag }}; do
+          until sudo podman pull ${{ steps.meta.outputs.image_ref }}:${{ steps.meta.outputs.image_tag }}; do
             RETRY_COUNT=$((RETRY_COUNT + 1))
             [ $RETRY_COUNT -ge $MAX_RETRIES ] && exit 1
             echo "Attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying..."
@@ -190,27 +234,16 @@ jobs:
         id: clean_version
         shell: bash
         run: |
-          IMG="oci:${{ github.workspace }}/container-image:${{ steps.meta.outputs.image_tag }}"
+          IMG="${{ steps.meta.outputs.image_ref }}:${{ steps.meta.outputs.image_tag }}"
           VERSION=""
 
           # 1. Image label (from the registry)
           VERSION=$(skopeo inspect --config \
-            "docker://ghcr.io/shadowelixir/${{ steps.meta.outputs.container_image }}:${{ steps.meta.outputs.image_tag }}" \
+            "docker://$IMG" \
             | jq -r '.config.Labels["org.opencontainers.image.version"] // empty' \
             | grep -oE '[0-9]+' | head -n 1 || true)
 
-          # 2. os-release inside the image
-          if [ -z "$VERSION" ]; then
-            echo "Label not usable, trying os-release..."
-            ID=$(podman pull -q "$IMG" 2>/dev/null || true)
-            if [ -n "$ID" ]; then
-              VERSION=$(podman run --rm --entrypoint sh "$ID" \
-                -c '. /etc/os-release && echo "$VERSION_ID"' 2>/dev/null \
-                | grep -oE '^[0-9]+' || true)
-            fi
-          fi
-
-          # 3. Fallback: latest stable Fedora release
+          # 2. Fallback: latest stable Fedora release
           if [ -z "$VERSION" ]; then
             echo "Image detection failed, falling back to releases.json..."
             MAX_RETRIES=5
@@ -238,92 +271,93 @@ jobs:
 
           echo "Using Fedora $VERSION"
           echo "stable_one=$VERSION" >> $GITHUB_OUTPUT
-          
+
+      - name: Set ISO Name
+        id: iso_name
+        shell: bash
+        run: |
+          echo "iso_file=${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso" >> $GITHUB_OUTPUT
+
+      - name: Prepare Live Image
+        shell: bash
+        run: |
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          until sudo env TMPDIR="$([ -d /mnt/podman-storage/tmp ] && echo /mnt/podman-storage/tmp || echo /var/tmp)" podman build \
+            --cap-add sys_admin \
+            --security-opt label=disable \
+            --volume /var/lib/containers/storage:/usr/lib/containers/storage:ro \
+            --build-arg BASE_IMAGE=${{ steps.meta.outputs.image_ref }}:${{ steps.meta.outputs.image_tag }} \
+            --build-arg IMAGE_REF=${{ steps.meta.outputs.image_ref }} \
+            --build-arg IMAGE_TAG=${{ steps.meta.outputs.image_tag }} \
+            --build-arg FLAVOR=${{ steps.meta.outputs.flavor }} \
+            --build-arg DESKTOP=${{ steps.meta.outputs.desktop }} \
+            --build-arg NVIDIA=${{ steps.meta.outputs.nvidia }} \
+            --tag localhost/shadowos-live:build \
+            ./iso; do
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            [ $RETRY_COUNT -ge $MAX_RETRIES ] && exit 1
+            echo "Attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying..."
+            sleep $((RANDOM % 120 + 30))
+          done
+
       - name: Build ISO (First Attempt)
         id: iso_build_1
         continue-on-error: true
-        uses: jasonn3/build-container-installer@main
+        uses: ublue-os/titanoboa@main
         with:
-          arch: ${{ matrix.arch }}
-          image_name: ${{ steps.meta.outputs.container_image }}
-          image_repo: ghcr.io/shadowelixir 
-          image_tag: ${{ steps.meta.outputs.image_tag }}
-          image_src: oci:/github/workspace/container-image:${{ steps.meta.outputs.image_tag }}
-          version: ${{ steps.clean_version.outputs.stable_one }}
-          variant: 'Kinoite'
-          additional_templates: '/github/workspace/files/installer/remove_root_password_prompt.tmpl'
-          flatpak_remote_refs: ${{ steps.flatpak_list.outputs.refs }}
-          iso_name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
-          enable_cache_dnf: "false"
-          enable_cache_skopeo: "false"
+          image-ref: localhost/shadowos-live:build
+          iso-dest: ${{ github.workspace }}/${{ steps.iso_name.outputs.iso_file }}
 
       - name: Clean folders after Attempt 1 failure
         if: steps.iso_build_1.outcome == 'failure'
         shell: bash
         run: |
-          sudo rm -rf /cache /build-container-installer
-          cd /home/runner/work/_actions/jasonn3/build-container-installer/main
-          sudo find container flatpaks -mindepth 1 ! -name 'Makefile' -exec rm -rf {} + 2>/dev/null || true
+          sudo find /home/runner/work/_actions/ublue-os/titanoboa -maxdepth 2 -name output -type d -exec rm -rf {} + 2>/dev/null || true
           sleep $((RANDOM % 120 + 30))
 
       - name: Build ISO (Second Attempt)
         id: iso_build_2
         if: steps.iso_build_1.outcome == 'failure'
         continue-on-error: true
-        uses: jasonn3/build-container-installer@main
+        uses: ublue-os/titanoboa@main
         with:
-          arch: ${{ matrix.arch }}
-          image_name: ${{ steps.meta.outputs.container_image }}
-          image_repo: ghcr.io/shadowelixir 
-          image_tag: ${{ steps.meta.outputs.image_tag }}
-          image_src: oci:/github/workspace/container-image:${{ steps.meta.outputs.image_tag }}
-          version: ${{ steps.clean_version.outputs.stable_one }}
-          variant: 'Kinoite'
-          additional_templates: '/github/workspace/files/installer/remove_root_password_prompt.tmpl'
-          flatpak_remote_refs: ${{ steps.flatpak_list.outputs.refs }}
-          iso_name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
-          enable_cache_dnf: "false"
-          enable_cache_skopeo: "false"
+          image-ref: localhost/shadowos-live:build
+          iso-dest: ${{ github.workspace }}/${{ steps.iso_name.outputs.iso_file }}
 
       - name: Clean folders after Attempt 2 failure
         if: steps.iso_build_2.outcome == 'failure'
         shell: bash
         run: |
-          sudo rm -rf /cache /build-container-installer
-          cd /home/runner/work/_actions/jasonn3/build-container-installer/main
-          sudo find container flatpaks -mindepth 1 ! -name 'Makefile' -exec rm -rf {} + 2>/dev/null || true
+          sudo find /home/runner/work/_actions/ublue-os/titanoboa -maxdepth 2 -name output -type d -exec rm -rf {} + 2>/dev/null || true
           sleep $((RANDOM % 120 + 30))
-          
+
       - name: Build ISO (Third Attempt)
         id: iso_build_3
         if: steps.iso_build_2.outcome == 'failure'
-        uses: jasonn3/build-container-installer@main
+        uses: ublue-os/titanoboa@main
         with:
-          arch: ${{ matrix.arch }}
-          image_name: ${{ steps.meta.outputs.container_image }}
-          image_repo: ghcr.io/shadowelixir 
-          image_tag: ${{ steps.meta.outputs.image_tag }}
-          image_src: oci:/github/workspace/container-image:${{ steps.meta.outputs.image_tag }}
-          version: ${{ steps.clean_version.outputs.stable_one }}
-          variant: 'Kinoite'
-          additional_templates: '/github/workspace/files/installer/remove_root_password_prompt.tmpl'
-          flatpak_remote_refs: ${{ steps.flatpak_list.outputs.refs }}
-          iso_name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
-          enable_cache_dnf: "false"
-          enable_cache_skopeo: "false"
+          image-ref: localhost/shadowos-live:build
+          iso-dest: ${{ github.workspace }}/${{ steps.iso_name.outputs.iso_file }}
 
       - name: Set ISO Output Path Metadata
         id: final_path
         shell: bash
         run: |
           if [ "${{ steps.iso_build_1.outcome }}" == "success" ]; then
-            echo "iso_path=${{ steps.iso_build_1.outputs.iso_path }}" >> $GITHUB_OUTPUT
+            ISO_PATH="${{ steps.iso_build_1.outputs.iso-dest }}"
           elif [ "${{ steps.iso_build_2.outcome }}" == "success" ]; then
-            echo "iso_path=${{ steps.iso_build_2.outputs.iso_path }}" >> $GITHUB_OUTPUT
+            ISO_PATH="${{ steps.iso_build_2.outputs.iso-dest }}"
           else
-            echo "iso_path=${{ steps.iso_build_3.outputs.iso_path }}" >> $GITHUB_OUTPUT
+            ISO_PATH="${{ steps.iso_build_3.outputs.iso-dest }}"
           fi
-          
+
+          mkdir -p iso-out
+          sudo mv "$ISO_PATH" "iso-out/${{ steps.iso_name.outputs.iso_file }}"
+          sudo chown "$(id -u):$(id -g)" "iso-out/${{ steps.iso_name.outputs.iso_file }}"
+          (cd iso-out && sha256sum "${{ steps.iso_name.outputs.iso_file }}" > "${{ steps.iso_name.outputs.iso_file }}-CHECKSUM")
+          echo "iso_path=${{ github.workspace }}/iso-out" >> $GITHUB_OUTPUT
+
       - name: Upload ISO to Job Artifacts
         uses: actions/upload-artifact@main
         with:

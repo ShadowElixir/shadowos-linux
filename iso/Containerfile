@@ -1,0 +1,23 @@
+# Turns a published ShadowOS image into a live + installer image that
+# Titanoboa can pack into an ISO. Build it as root with:
+#
+#   sudo podman build --cap-add sys_admin --security-opt label=disable \
+#     --volume /var/lib/containers/storage:/usr/lib/containers/storage:ro \
+#     --build-arg BASE_IMAGE=ghcr.io/shadowelixir/shadowos-lite:latest \
+#     --build-arg IMAGE_REF=ghcr.io/shadowelixir/shadowos-lite \
+#     --build-arg IMAGE_TAG=latest --build-arg FLAVOR=lite --build-arg DESKTOP=lite \
+#     --tag localhost/shadowos-live:build ./iso
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+# ARGs declared after FROM are visible to build.sh as environment variables
+ARG IMAGE_REF
+ARG IMAGE_TAG
+ARG FLAVOR
+ARG DESKTOP
+ARG NVIDIA=false
+
+COPY ./src /src
+RUN --mount=type=cache,target=/var/tmp/libdnf5,id=libdnf5 \
+    bash /src/build.sh
+RUN rm -fr /src
