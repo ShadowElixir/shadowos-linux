@@ -243,7 +243,15 @@ jobs:
             | jq -r '.config.Labels["org.opencontainers.image.version"] // empty' \
             | grep -oE '[0-9]+' | head -n 1 || true)
 
-          # 2. Fallback: latest stable Fedora release
+          # 2. os-release inside the image
+          if [ -z "$VERSION" ]; then
+            echo "Label not usable, trying os-release..."
+            VERSION=$(sudo podman run --rm --entrypoint sh "$IMG" \
+              -c '. /etc/os-release && echo "$VERSION_ID"' 2>/dev/null \
+              | grep -oE '^[0-9]+' || true)
+          fi
+
+          # 3. Fallback: latest stable Fedora release
           if [ -z "$VERSION" ]; then
             echo "Image detection failed, falling back to releases.json..."
             MAX_RETRIES=5
