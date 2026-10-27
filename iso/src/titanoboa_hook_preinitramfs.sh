@@ -167,7 +167,7 @@ KICKSTART
         podman-auto-update.timer \
         ublue-user-setup.service; do
         systemctl --global disable "$s" 2>/dev/null || true
-    :
+    done
 )
 
 # Dont start Steam at login, and remove packages that shouldnt be used in a live session
