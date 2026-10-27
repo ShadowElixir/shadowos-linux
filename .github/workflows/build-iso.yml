@@ -83,7 +83,7 @@ jobs:
         if: matrix.arch == 'x86_64'
         uses: jlumbroso/free-disk-space@main
         with:
-          tool-cache: true
+          preinstalled-runtimes: true
 
       - name: Mount Container Storage BTRFS Loopback
         if: matrix.arch == 'x86_64'
