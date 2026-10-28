@@ -21,6 +21,17 @@ dnf install -qy "${OPENH264[@]}" --allowerasing \
 
 mkdir -p /var/lib/rpm-state # Needed for Anaconda Web UI
 
+# Firefox is only here for the Anaconda Web UI: hide it from menus
+for app in firefox org.mozilla.firefox; do
+    FILE="/usr/share/applications/${app}.desktop"
+    [ -f "$FILE" ] || continue
+    if grep -q "^NoDisplay=" "$FILE"; then
+        sed -i 's/^NoDisplay=.*/NoDisplay=true/' "$FILE"
+    else
+        sed -i '/\[Desktop Entry\]/a NoDisplay=true' "$FILE"
+    fi
+done
+
 # Used to show the installation log if the installer fails
 dnf install -qy --setopt=install_weak_deps=0 yad
 
