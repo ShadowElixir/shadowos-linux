@@ -30,7 +30,7 @@
 - Replaced Lutris with a [custom build](https://github.com/ShadowElixir/HeroicGamesLauncher) of [Heroic Games Launcher](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher) that [fixes console mode](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher/pull/5620).
 - Have an android phone? ADB, Heimdall (+frontend), [scrcpy](https://github.com/Genymobile/scrcpy) and [Universal Android Debloater](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) are included in ShadowOS
 - `ujust scrcpy-cam` command included if you want to use your phone's camera as your camera *(you might want to run `ujust scrcpy-cam edit` first)*
-- `ujust toggle-autologin` command included in Cosmic/XFCE variants if you prefer to auto-login into your desktop *(KDE/Gnome should have the option in settings)*
+- `ujust toggle-autologin` command included in Cosmic/XFCE/Lite variants if you prefer to auto-login into your desktop *(KDE/Gnome should have the option in settings)*
 - Automatic system, flatpak, appimage, brew and theme updates
 - Replaced Bazaar with Gnome Software *(Cosmic Store in the Cosmic variant)*
 - Run MangoHUD in any game out-of-the-box just by pressing the `END` key
