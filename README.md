@@ -1,7 +1,12 @@
+<div align="center">
+<table>
+<tr>
+<td align="center" valign="middle">
+
 <p align="center">
     <img src="files/base/usr/share/pixmaps/fedora_whitelogo.svg" 
          alt="ShadowOS" 
-         style="height: 140px; width: auto;" />
+         style="height: 90px; width: auto;" />
 </p>
 
 <p align="center">
@@ -11,9 +16,21 @@
 
 <p align="center">
   <a href="https://shadowelixir.github.io/linux">
-    <img src="https://raw.githubusercontent.com/ShadowElixir/linux/refs/heads/main/images/Download.svg" alt="Download ShadowOS" style="height: 48px; width: auto;" />
+    <img src="https://raw.githubusercontent.com/ShadowElixir/linux/refs/heads/main/images/Download.svg" alt="Download ShadowOS" style="height: 32px; width: auto;" />
   </a>
 </p>
+
+</td>
+<td align="center" valign="middle">
+
+<img src="files/base/usr/share/pixmaps/poweredby.png" alt="Powered by ShadowOS" width="150" />
+<br>
+<sub>sticker by u/dereckgcc</sub>
+
+</td>
+</tr>
+</table>
+</div>
 
 <h1 align="center">Overview</h1>
 
@@ -65,6 +82,7 @@
     </td>
   </tr>
 </table>
+</div>
 
 <h1 align="center">Installation</h1>
 
