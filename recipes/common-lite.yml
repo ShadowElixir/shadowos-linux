@@ -39,7 +39,7 @@ modules:
       - dnf -y copr enable ublue-os/packages "fedora-$(rpm -E %fedora)-$(uname -m)"
       - dnf -y install uupd
       - dnf -y copr remove ublue-os/packages
-      - sed -i 's/"theme": "twilight"/"theme": "deep_ocean"/' /etc/skel/.abdm/config/appSettings.json
+      - 'sed -i ''s/"theme": "twilight"/"theme": "deep_ocean"/'' /etc/skel/.abdm/config/appSettings.json'
     scripts:
       - bloat.sh
       
