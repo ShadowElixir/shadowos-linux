@@ -25,7 +25,6 @@ modules:
         - malcontent-control
         - rygel
         - Sunshine
-        - btrfs-assistant
         - epiphany-runtime
         - makemkv
         - lutris
