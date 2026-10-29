@@ -1,10 +1,6 @@
 ---
 # yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
 modules:
-  - type: files
-    files:
-      - source: base
-        destination: /
 
   - type: dnf
     install:
@@ -12,6 +8,11 @@ modules:
         - yt-dlp
         - android-tools
         - alsa-plugins-a52
+
+  - type: files
+    files:
+      - source: base
+        destination: /
         
   - type: default-flatpaks
     configurations:
