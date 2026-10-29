@@ -11,6 +11,7 @@ modules:
       packages:
         - yt-dlp
         - android-tools
+        - alsa-plugins-a52
         
   - type: default-flatpaks
     configurations:
@@ -67,6 +68,12 @@ modules:
   - type: kargs
     kargs:
       - lockdown=confidentiality
+
+  - type: systemd
+    user:
+      enabled:
+        - ac3.service
+        - ac3-keepalive.service
 
   - type: initramfs
   - type: signing

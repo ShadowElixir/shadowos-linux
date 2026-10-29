@@ -1,0 +1,16 @@
+# 1. The Raw Encoder
+pcm.a52_raw {
+    type a52
+    rate 48000
+    bitrate 640
+    channels 6
+    format S16_LE
+    slavepcm "hw:CARD=Audio,DEV=0"
+}
+
+# 2. The Safe Wrapper
+pcm.a52_safe {
+    type plug
+    slave.pcm "a52_raw"
+    hint { show on; description "TV (AC3 Surround)" }
+}

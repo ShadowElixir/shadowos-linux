@@ -1,0 +1,11 @@
+[Unit]
+Description=Keep AC3 Output Alive with Silence
+After=ac3.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/paplay --raw --format=s16le --rate=48000 --channels=2 --device=TV_AC3 --property=media.role=background --latency-msec=2000 /dev/zero
+Restart=always
+
+[Install]
+WantedBy=default.target

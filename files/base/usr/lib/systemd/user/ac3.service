@@ -1,0 +1,14 @@
+[Unit]
+Description=Force AC3 Surround Sink for HDMI
+After=pipewire-pulse.service
+Wants=pipewire-pulse.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/sleep 5
+ExecStart=/bin/bash -c "pactl list short sinks | grep -q TV_AC3 || pactl load-module module-alsa-sink device=a52_safe sink_name=TV_AC3 sink_properties=device.description='TV_Surround_5.1'"
+Restart=on-failure
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target
