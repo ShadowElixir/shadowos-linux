@@ -6,24 +6,24 @@
 <p align="center">
     <img src="files/base/usr/share/pixmaps/fedora_whitelogo.svg" 
          alt="ShadowOS" 
-         style="height: 90px; width: auto;" />
+         style="height: 140px; width: auto;" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build.yml"><img src="https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build.yml/badge.svg" alt="image build badge"/></a>
-  <a href="https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build-iso.yml"><img src="https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build-iso.yml/badge.svg" alt="iso build badge"/></a>
+  <a href="https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build.yml"><img src="https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build.yml/badge.svg" alt="image build badge" height="28"/></a>
+  <a href="https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build-iso.yml"><img src="https://github.com/ShadowElixir/shadowos-linux/actions/workflows/build-iso.yml/badge.svg" alt="iso build badge" height="28"/></a>
 </p>
 
 <p align="center">
   <a href="https://shadowelixir.github.io/linux">
-    <img src="https://raw.githubusercontent.com/ShadowElixir/linux/refs/heads/main/images/Download.svg" alt="Download ShadowOS" style="height: 32px; width: auto;" />
+    <img src="https://raw.githubusercontent.com/ShadowElixir/linux/refs/heads/main/images/Download.svg" alt="Download ShadowOS" style="height: 52px; width: auto;" />
   </a>
 </p>
 
 </td>
 <td align="center" valign="middle">
 
-<img src="files/base/usr/share/pixmaps/poweredby.png" alt="Powered by ShadowOS" width="150" />
+<img src="files/base/usr/share/pixmaps/poweredby.png" alt="Powered by ShadowOS" width="240" />
 <br>
 <sub>sticker by u/dereckgcc</sub>
 
