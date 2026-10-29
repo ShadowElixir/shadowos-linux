@@ -60,7 +60,13 @@ modules:
   - type: justfiles
     include:
       - toggle-umip.just
+      - toggle-kexec.just
+      - toggle-lockdown.just
       - warp.just
-      
+
+  - type: kargs
+    kargs:
+      - lockdown=confidentiality
+
   - type: initramfs
   - type: signing
