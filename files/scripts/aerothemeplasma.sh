@@ -69,6 +69,8 @@ unset -f sudo
 git clone --depth=1 --single-branch https://gitgud.io/Gamer95875/Windows-7-Better /etc/skel/.themes/Windows-7-Better
 ln -s ../.themes/Windows-7-Better/gtk-4.0 /etc/skel/.config/gtk-4.0
 chmod +x /usr/libexec/topgrade/windows-7-gtk-theme-update
+mkdir -p /etc/ublue-os
+[ -f /etc/ublue-os/topgrade.toml ] || touch /etc/ublue-os/topgrade.toml
 echo '"Windows 7 GTK Theme" = "/usr/libexec/topgrade/windows-7-gtk-theme-update"' >> /etc/ublue-os/topgrade.toml
 
 CONFIG="/etc/bazzite-updater/config.ini"
