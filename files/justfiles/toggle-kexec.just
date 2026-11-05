@@ -5,14 +5,10 @@ toggle-kexec:
     #!/usr/bin/bash
     source /usr/lib/ujust/ujust.sh
 
-    SYSCTL_CONF="/etc/sysctl.d/99-kexec.conf"
-
-    if [ -f "$SYSCTL_CONF" ]; then
+    if rpm-ostree kargs | grep -q "sysctl.kernel.kexec_load_disabled=1"; then
         echo "${red}Re-enabling kexec (removing restriction)...${n}"
-        sudo rm -f "$SYSCTL_CONF"
-        sudo sysctl -w kernel.kexec_load_disabled=0
+        sudo rpm-ostree kargs --delete-if-present=sysctl.kernel.kexec_load_disabled=1
     else
         echo "${green}Disabling kexec (hardening)...${n}"
-        echo "kernel.kexec_load_disabled=1" | sudo tee "$SYSCTL_CONF" > /dev/null
-        sudo sysctl --system
+        sudo rpm-ostree kargs --append-if-missing=sysctl.kernel.kexec_load_disabled=1
     fi

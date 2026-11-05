@@ -68,6 +68,7 @@ modules:
   - type: kargs
     kargs:
       - lockdown=confidentiality
+      - sysctl.kernel.kexec_load_disabled=1
 
   - type: systemd
     user:
