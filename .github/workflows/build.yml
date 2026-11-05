@@ -70,8 +70,7 @@ jobs:
           pr_event_number: ${{ github.event.number }}
           maximize_build_space: true
           skip_checkout: true
-          build_chunked_oci: true
-          max_layers: 256
+          chunkah: true
 
       - name: Build Custom Image (Second Attempt)
         id: build_attempt_2
@@ -85,8 +84,7 @@ jobs:
           pr_event_number: ${{ github.event.number }}
           maximize_build_space: true
           skip_checkout: true
-          build_chunked_oci: true
-          max_layers: 256
+          chunkah: true
 
       - name: Build Custom Image (Third Attempt)
         id: build_attempt_3
@@ -99,5 +97,4 @@ jobs:
           pr_event_number: ${{ github.event.number }}
           maximize_build_space: true
           skip_checkout: true
-          build_chunked_oci: true
-          max_layers: 256
+          chunkah: true
