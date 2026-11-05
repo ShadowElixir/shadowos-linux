@@ -14,6 +14,8 @@ jobs:
   generate-matrix:
     name: Generate Recipe Matrix
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -48,9 +50,10 @@ jobs:
         recipe: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     steps:
       - name: Maximize build space
-        uses: jlumbroso/free-disk-space@main
-        with: 
+        uses: lumbroso-commons/free-disk-space@main
+        with:
           preinstalled-runtimes: true
+          swap-storage: true
 
       - name: Checkout
         uses: actions/checkout@main

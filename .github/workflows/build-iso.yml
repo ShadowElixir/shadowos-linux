@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           . /etc/os-release
-          echo "label=ubuntu-${VERSION_ID}-arm" >> $GITHUB_OUTPUT
+          echo "label=ubuntu-${VERSION_ID}-arm" >> "$GITHUB_OUTPUT"
 
       - name: Parse Recipe Files for ISOs
         id: set-matrix
@@ -49,7 +49,6 @@ jobs:
               case "$base" in *ublue-os/bazzite*) flavor=bazzite ;; *) flavor=lite ;; esac
               case "$base" in *nvidia*) nvidia=true ;; *) nvidia=false ;; esac
 
-              # lite also gets an arm64 ISO
               archs="x86_64"
               [ "$desktop" = "lite" ] && archs="x86_64 arm64"
 
@@ -64,7 +63,7 @@ jobs:
               done
             done | jq -cs .
           )
-          echo "matrix=$JSON_DATA" >> $GITHUB_OUTPUT
+          echo "matrix=$JSON_DATA" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build ISO (${{ matrix.filename }} - ${{ matrix.arch }})
@@ -77,19 +76,26 @@ jobs:
     permissions:
       contents: read
       packages: read
-      id-token: write
     steps:
       - name: Maximize build space
         if: matrix.arch == 'x86_64'
-        uses: jlumbroso/free-disk-space@main
+        uses: lumbroso-commons/free-disk-space@main
         with:
           preinstalled-runtimes: true
+          swap-storage: true
 
       - name: Mount Container Storage BTRFS Loopback
         if: matrix.arch == 'x86_64'
         shell: bash
         run: |
-          sudo truncate -s 110G /mnt/podman-storage.img
+          AVAIL_GB=$(df --output=avail -BG /mnt | tail -n 1 | tr -dc '0-9')
+          [[ "$AVAIL_GB" =~ ^[0-9]+$ ]] || { echo "Could not determine available space on /mnt" >&2; exit 1; }
+          SIZE_GB=$((AVAIL_GB - 20))
+          [ "$SIZE_GB" -gt 110 ] && SIZE_GB=110
+          [ "$SIZE_GB" -ge 30 ] || { echo "Not enough space on /mnt (${AVAIL_GB}G free; need at least 50G)" >&2; exit 1; }
+          echo "/mnt has ${AVAIL_GB}G free, using a ${SIZE_GB}G loopback and reserving 20G"
+
+          sudo truncate -s "${SIZE_GB}G" /mnt/podman-storage.img
           sudo mkfs.btrfs -f -m single -d single /mnt/podman-storage.img
           sudo podman system reset --force
           sudo systemctl stop podman.service
@@ -106,10 +112,13 @@ jobs:
       - name: Generate Metadata
         id: meta
         shell: bash
+        env:
+          FILENAME: ${{ matrix.filename }}
+          ARCH: ${{ matrix.arch }}
+          FLAVOR: ${{ matrix.flavor }}
+          DESKTOP: ${{ matrix.desktop }}
+          NVIDIA: ${{ matrix.nvidia }}
         run: |
-          FILENAME="${{ matrix.filename }}"
-          ARCH="${{ matrix.arch }}"
-          
           if [[ "$FILENAME" == *-beta ]]; then
             ISO_NAME="${FILENAME%-beta}"
             IMAGE_TAG="beta"
@@ -118,25 +127,23 @@ jobs:
             IMAGE_TAG="latest"
           fi
 
-          # What the live image needs to know about this variant
-          FLAVOR="${{ matrix.flavor }}"
-          DESKTOP="${{ matrix.desktop }}"
-          NVIDIA="${{ matrix.nvidia }}"
-
-          echo "container_image=$ISO_NAME" >> $GITHUB_OUTPUT
-          echo "image_ref=ghcr.io/shadowelixir/$ISO_NAME" >> $GITHUB_OUTPUT
-          echo "flavor=$FLAVOR" >> $GITHUB_OUTPUT
-          echo "desktop=$DESKTOP" >> $GITHUB_OUTPUT
-          echo "nvidia=$NVIDIA" >> $GITHUB_OUTPUT
-          echo "full_iso_name=$FILENAME" >> $GITHUB_OUTPUT
-          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "arch=$ARCH" >> $GITHUB_OUTPUT
-          echo "date=$(TZ="Asia/Beirut" date +'%Y%m%d')" >> $GITHUB_OUTPUT
-          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "container_image=$ISO_NAME" >> "$GITHUB_OUTPUT"
+          echo "image_ref=ghcr.io/shadowelixir/$ISO_NAME" >> "$GITHUB_OUTPUT"
+          echo "flavor=$FLAVOR" >> "$GITHUB_OUTPUT"
+          echo "desktop=$DESKTOP" >> "$GITHUB_OUTPUT"
+          echo "nvidia=$NVIDIA" >> "$GITHUB_OUTPUT"
+          echo "full_iso_name=$FILENAME" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "arch=$ARCH" >> "$GITHUB_OUTPUT"
+          echo "date=$(TZ="Asia/Beirut" date +'%Y%m%d')" >> "$GITHUB_OUTPUT"
+          echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Resolve Dynamic Flatpak Refs
         id: flatpak_list
         shell: bash
+        env:
+          FILENAME: ${{ matrix.filename }}
+          ARCH: ${{ matrix.arch }}
         run: |
           BASE_DIR="files/flatpaks"
           REFS_STRING=""
@@ -149,7 +156,7 @@ jobs:
               while IFS= read -r ID || [ -n "$ID" ]; do
                 [[ -z "$ID" || "$ID" =~ ^# ]] && continue
                 CLEAN_ID=$(echo "$ID" | tr -d '\r' | xargs)
-                
+
                 if [[ "$mode" == "exclude" ]]; then
                   EXCLUDE_STRING+="$CLEAN_ID "
                 else
@@ -170,16 +177,16 @@ jobs:
           for item_path in "$BASE_DIR"/*; do
             if [ -f "$item_path" ]; then
               ITEM_NAME=$(basename "$item_path")
-              
+
               if [[ "$ITEM_NAME" == "app" || "$ITEM_NAME" == "runtime" ]]; then
                 continue
               fi
-              
+
               if [[ "$ITEM_NAME" == -* ]]; then
                 CLEAN_MATCH="${ITEM_NAME#-}"
                 IFS=',' read -ra TARGETS <<< "$CLEAN_MATCH"
                 for target in "${TARGETS[@]}"; do
-                  if [[ "${{ matrix.filename }}" == *"$target"* ]]; then
+                  if [[ "$FILENAME" == *"$target"* ]]; then
                     process_file "$item_path" "exclude"
                     break
                   fi
@@ -187,7 +194,7 @@ jobs:
               else
                 IFS=',' read -ra TARGETS <<< "$ITEM_NAME"
                 for target in "${TARGETS[@]}"; do
-                  if [[ "${{ matrix.filename }}" == *"$target"* ]]; then
+                  if [[ "$FILENAME" == *"$target"* ]]; then
                     process_file "$item_path" "include"
                     break
                   fi
@@ -211,54 +218,56 @@ jobs:
           done
 
           FINAL_REFS=$(echo "$FINAL_REFS" | xargs)
-          echo "refs=$FINAL_REFS" >> $GITHUB_OUTPUT
+          echo "refs=$FINAL_REFS" >> "$GITHUB_OUTPUT"
 
-          # One ref per line for the live image build (refs are x86_64, swap for arm64)
           FLATPAK_ARCH="x86_64"
-          [ "${{ matrix.arch }}" == "arm64" ] && FLATPAK_ARCH="aarch64"
+          [ "$ARCH" = "arm64" ] && FLATPAK_ARCH="aarch64"
           echo "$FINAL_REFS" | tr ' ' '\n' | sed "s#/x86_64/#/$FLATPAK_ARCH/#" | grep . > iso/src/flatpaks || true
 
       - name: Pull Container Image
         shell: bash
+        env:
+          IMAGE: ${{ steps.meta.outputs.image_ref }}:${{ steps.meta.outputs.image_tag }}
         run: |
           MAX_RETRIES=10
           RETRY_COUNT=0
-          until sudo podman pull ${{ steps.meta.outputs.image_ref }}:${{ steps.meta.outputs.image_tag }}; do
+          until sudo podman pull "$IMAGE"; do
             RETRY_COUNT=$((RETRY_COUNT + 1))
-            [ $RETRY_COUNT -ge $MAX_RETRIES ] && exit 1
-            echo "Attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying..."
+            if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+              echo "Container pull failed after $MAX_RETRIES attempts" >&2
+              exit 1
+            fi
+            echo "Attempt $RETRY_COUNT/$MAX_RETRIES failed; retrying..."
             sleep $((RANDOM % 120 + 30))
           done
 
       - name: Detect Fedora Version
         id: clean_version
         shell: bash
+        env:
+          IMAGE: ${{ steps.meta.outputs.image_ref }}:${{ steps.meta.outputs.image_tag }}
         run: |
-          IMG="${{ steps.meta.outputs.image_ref }}:${{ steps.meta.outputs.image_tag }}"
           VERSION=""
 
-          # 1. Image label (from the registry)
           VERSION=$(skopeo inspect --config \
-            "docker://$IMG" \
+            "docker://$IMAGE" \
             | jq -r '.config.Labels["org.opencontainers.image.version"] // empty' \
             | grep -oE '[0-9]+' | head -n 1 || true)
 
-          # 2. os-release inside the image
           if [ -z "$VERSION" ]; then
             echo "Label not usable, trying os-release..."
-            VERSION=$(sudo podman run --rm --entrypoint sh "$IMG" \
+            VERSION=$(sudo podman run --rm --entrypoint sh "$IMAGE" \
               -c '. /etc/os-release && echo "$VERSION_ID"' 2>/dev/null \
               | grep -oE '^[0-9]+' || true)
           fi
 
-          # 3. Fallback: latest stable Fedora release
           if [ -z "$VERSION" ]; then
             echo "Image detection failed, falling back to releases.json..."
             MAX_RETRIES=5
             RETRY_COUNT=0
             URL="https://fedoraproject.org/releases.json"
 
-            until [ -n "$VERSION" ] || [ $RETRY_COUNT -ge $MAX_RETRIES ]; do
+            until [ -n "$VERSION" ] || [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; do
               RESPONSE=$(curl -fsSL "$URL" || echo "failed")
 
               if [ "$RESPONSE" != "failed" ]; then
@@ -266,8 +275,10 @@ jobs:
               fi
 
               if [ -z "$VERSION" ]; then
-                sleep 10
                 RETRY_COUNT=$((RETRY_COUNT + 1))
+                if [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; then
+                  sleep 10
+                fi
               fi
             done
           fi
@@ -278,86 +289,110 @@ jobs:
           fi
 
           echo "Using Fedora $VERSION"
-          echo "stable_one=$VERSION" >> $GITHUB_OUTPUT
+          echo "stable_one=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Set ISO Name
         id: iso_name
         shell: bash
+        env:
+          FULL_ISO_NAME: ${{ steps.meta.outputs.full_iso_name }}
+          FEDORA_VERSION: ${{ steps.clean_version.outputs.stable_one }}
+          ARCH: ${{ steps.meta.outputs.arch }}
+          BUILD_DATE: ${{ steps.meta.outputs.date }}
+          SHA_SHORT: ${{ steps.meta.outputs.sha_short }}
         run: |
-          echo "iso_file=${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso" >> $GITHUB_OUTPUT
+          echo "iso_file=${FULL_ISO_NAME}-f${FEDORA_VERSION}-${ARCH}-${BUILD_DATE}-${SHA_SHORT}.iso" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare ISO Output Dir
+        id: out
+        shell: bash
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          if [ "$ARCH" = "x86_64" ]; then
+            DIR=/mnt/iso-out
+          else
+            DIR="$GITHUB_WORKSPACE/iso-out"
+          fi
+          sudo mkdir -p "$DIR"
+          sudo chown "$(id -u):$(id -g)" "$DIR"
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
 
       - name: Prepare Live Image
         shell: bash
+        env:
+          BASE_IMAGE: ${{ steps.meta.outputs.image_ref }}:${{ steps.meta.outputs.image_tag }}
+          IMAGE_REF: ${{ steps.meta.outputs.image_ref }}
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+          FLAVOR: ${{ steps.meta.outputs.flavor }}
+          DESKTOP: ${{ steps.meta.outputs.desktop }}
+          NVIDIA: ${{ steps.meta.outputs.nvidia }}
         run: |
           MAX_RETRIES=3
           RETRY_COUNT=0
-          until sudo env TMPDIR="$([ -d /mnt/podman-storage/tmp ] && echo /mnt/podman-storage/tmp || echo /var/tmp)" podman build \
+          TMP_DIR=/var/tmp
+          [ -d /mnt/podman-storage/tmp ] && TMP_DIR=/mnt/podman-storage/tmp
+
+          until sudo env TMPDIR="$TMP_DIR" podman build \
             --cap-add sys_admin \
             --security-opt label=disable \
             --volume /var/lib/containers/storage:/usr/lib/containers/storage:ro \
-            --build-arg BASE_IMAGE=${{ steps.meta.outputs.image_ref }}:${{ steps.meta.outputs.image_tag }} \
-            --build-arg IMAGE_REF=${{ steps.meta.outputs.image_ref }} \
-            --build-arg IMAGE_TAG=${{ steps.meta.outputs.image_tag }} \
-            --build-arg FLAVOR=${{ steps.meta.outputs.flavor }} \
-            --build-arg DESKTOP=${{ steps.meta.outputs.desktop }} \
-            --build-arg NVIDIA=${{ steps.meta.outputs.nvidia }} \
+            --build-arg "BASE_IMAGE=$BASE_IMAGE" \
+            --build-arg "IMAGE_REF=$IMAGE_REF" \
+            --build-arg "IMAGE_TAG=$IMAGE_TAG" \
+            --build-arg "FLAVOR=$FLAVOR" \
+            --build-arg "DESKTOP=$DESKTOP" \
+            --build-arg "NVIDIA=$NVIDIA" \
             --tag localhost/shadowos-live:build \
             ./iso; do
             RETRY_COUNT=$((RETRY_COUNT + 1))
-            [ $RETRY_COUNT -ge $MAX_RETRIES ] && exit 1
-            echo "Attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying..."
+            if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+              echo "Live image build failed after $MAX_RETRIES attempts" >&2
+              exit 1
+            fi
+            echo "Attempt $RETRY_COUNT/$MAX_RETRIES failed; retrying..."
             sleep $((RANDOM % 120 + 30))
           done
 
-      - name: Build ISO (First Attempt)
-        id: iso_build_1
-        continue-on-error: true
+      - name: Disk usage (before ISO build)
+        shell: bash
+        run: df -h / /mnt
+
+      - name: Build ISO
+        id: iso_build
         uses: ublue-os/titanoboa@main
         with:
           image-ref: localhost/shadowos-live:build
           iso-dest: ${{ github.workspace }}/${{ steps.iso_name.outputs.iso_file }}
 
-      - name: Build ISO (Second Attempt)
-        id: iso_build_2
-        if: steps.iso_build_1.outcome == 'failure'
-        continue-on-error: true
-        uses: ublue-os/titanoboa@main
-        with:
-          image-ref: localhost/shadowos-live:build
-          iso-dest: ${{ github.workspace }}/${{ steps.iso_name.outputs.iso_file }}
+      - name: Disk usage (after ISO build)
+        if: always()
+        shell: bash
+        run: df -h / /mnt
 
-      - name: Build ISO (Third Attempt)
-        id: iso_build_3
-        if: steps.iso_build_2.outcome == 'failure'
-        uses: ublue-os/titanoboa@main
-        with:
-          image-ref: localhost/shadowos-live:build
-          iso-dest: ${{ github.workspace }}/${{ steps.iso_name.outputs.iso_file }}
-
-      - name: Set ISO Output Path Metadata
+      - name: Move ISO and Generate Checksum
         id: final_path
         shell: bash
+        env:
+          ISO_SOURCE: ${{ steps.iso_build.outputs.iso-dest }}
+          ISO_NAME: ${{ steps.iso_name.outputs.iso_file }}
+          OUTPUT_DIR: ${{ steps.out.outputs.dir }}
         run: |
-          if [ "${{ steps.iso_build_1.outcome }}" == "success" ]; then
-            ISO_PATH="${{ steps.iso_build_1.outputs.iso-dest }}"
-          elif [ "${{ steps.iso_build_2.outcome }}" == "success" ]; then
-            ISO_PATH="${{ steps.iso_build_2.outputs.iso-dest }}"
-          else
-            ISO_PATH="${{ steps.iso_build_3.outputs.iso-dest }}"
-          fi
-
-          mkdir -p iso-out
-          sudo mv "$ISO_PATH" "iso-out/${{ steps.iso_name.outputs.iso_file }}"
-          sudo chown "$(id -u):$(id -g)" "iso-out/${{ steps.iso_name.outputs.iso_file }}"
-          (cd iso-out && sha256sum "${{ steps.iso_name.outputs.iso_file }}" > "${{ steps.iso_name.outputs.iso_file }}-CHECKSUM")
-          echo "iso_path=${{ github.workspace }}/iso-out" >> $GITHUB_OUTPUT
+          [ -n "$ISO_SOURCE" ] && [ -f "$ISO_SOURCE" ] || { echo "Titanoboa did not produce the expected ISO" >&2; exit 1; }
+          sudo mv -- "$ISO_SOURCE" "$OUTPUT_DIR/$ISO_NAME"
+          sudo chown "$(id -u):$(id -g)" "$OUTPUT_DIR/$ISO_NAME"
+          (
+            cd "$OUTPUT_DIR"
+            sha256sum "$ISO_NAME" > "$ISO_NAME-CHECKSUM"
+          )
+          echo "iso_path=$OUTPUT_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Upload ISO to Job Artifacts
         uses: actions/upload-artifact@main
         with:
           path: |
-            ${{ steps.final_path.outputs.iso_path }}/${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso
-            ${{ steps.final_path.outputs.iso_path }}/${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.iso-CHECKSUM
+            ${{ steps.final_path.outputs.iso_path }}/${{ steps.iso_name.outputs.iso_file }}
+            ${{ steps.final_path.outputs.iso_path }}/${{ steps.iso_name.outputs.iso_file }}-CHECKSUM
           name: ${{ steps.meta.outputs.full_iso_name }}-f${{ steps.clean_version.outputs.stable_one }}-${{ steps.meta.outputs.arch }}-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha_short }}.zip
           retention-days: 4
           compression-level: 0
