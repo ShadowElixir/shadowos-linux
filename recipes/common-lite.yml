@@ -42,7 +42,16 @@ modules:
       - 'sed -i ''s/"theme": "twilight"/"theme": "deep_ocean"/'' /etc/skel/.abdm/config/appSettings.json'
     scripts:
       - bloat.sh
-      
+
+  - type: default-flatpaks
+    configurations:
+      - notify: false
+        scope: system
+        repo:
+          title: Flathub (system)
+        install:
+          - io.mpv.Mpv
+
   - type: justfiles
     include:
       - 84-bazzite-virt.just
