@@ -65,6 +65,12 @@ modules:
     system:
       enabled:
         - uupd.timer
+      masked:
+        - bootc-fetch-apply-updates.timer
+        - flatpak-system-updates.timer
+    user:
+      masked:
+        - flatpak-user-updates.timer
 
   - type: os-release
     properties:
