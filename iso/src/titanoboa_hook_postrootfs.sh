@@ -153,6 +153,70 @@ mkdir -p /tmp/anacoda_custom_logs
 %end
 KICKSTART
 
+### Secure Boot key enrollment (Bazzite-based images only) ###
+# Bazzite-based images ship a kernel/modules signed with the Universal Blue key,
+# so Secure Boot users must enroll it. Lite images use Fedora's signed kernel.
+if [ "${FLAVOR:-}" = "bazzite" ]; then
+    SBKEY_URL='https://github.com/ublue-os/akmods/raw/main/certs/public_key.der'
+    SECUREBOOT_KEY="/usr/share/ublue-os/sb_pubkey.der"
+    SECUREBOOT_DOC_URL="https://docs.bazzite.gg/sb"
+    SECUREBOOT_DOC_URL_QR="/usr/share/ublue-os/secure_boot_qr.png"
+
+    # mokutil imports the key, qrencode makes the QR for the docs prompt (yad is installed above)
+    command -v mokutil >/dev/null || dnf install -qy mokutil
+    dnf install -qy --setopt=install_weak_deps=0 qrencode
+
+    mkdir -p /usr/share/ublue-os
+    curl -fL --retry 3 -o "$SECUREBOOT_KEY" "$SBKEY_URL"
+
+    cat >>/usr/share/anaconda/post-scripts/secureboot-enroll-key.ks <<EOF
+%post --erroronfail --nochroot --log=/tmp/anacoda_custom_logs/secureboot-enroll-key.log
+set -oue pipefail
+
+readonly ENROLLMENT_PASSWORD="universalblue"
+readonly SECUREBOOT_KEY="$SECUREBOOT_KEY"
+
+if [[ ! -d "/sys/firmware/efi" ]]; then
+	echo "EFI mode not detected. Skipping key enrollment."
+	exit 0
+fi
+
+if [[ ! -f "\$SECUREBOOT_KEY" ]]; then
+	echo "Secure boot key not provided: \$SECUREBOOT_KEY"
+	exit 0
+fi
+
+SYS_ID="\$(cat /sys/devices/virtual/dmi/id/product_name)"
+if [[ ":Jupiter:Galileo:Fremont:" =~ ":\$SYS_ID:" ]]; then
+	echo "Valve hardware detected. Skipping key enrollment."
+	exit 0
+fi
+
+mokutil --timeout -1 || :
+echo -e "\$ENROLLMENT_PASSWORD\n\$ENROLLMENT_PASSWORD" | mokutil --import "\$SECUREBOOT_KEY" || :
+%end
+EOF
+
+    cat >>/usr/share/anaconda/post-scripts/secureboot-docs.ks <<EOF
+%post --nochroot --log=/tmp/anacoda_custom_logs/secureboot-docs.log
+SECUREBOOT_KEY="$SECUREBOOT_KEY"
+SECUREBOOT_DOC_URL="$SECUREBOOT_DOC_URL"
+SECUREBOOT_DOC_URL_QR="$SECUREBOOT_DOC_URL_QR"
+
+LC_ALL=C mokutil -t "\$SECUREBOOT_KEY" | grep -q "is already in the enrollment request" && \\
+    run0 --user=liveuser yad --timeout=0 --on-top --button=Ok:0 --image="\$SECUREBOOT_DOC_URL_QR" --text="<b>Secure Boot Key added:</b>\nPlease check the documentation to finish enrolling the key\n\$SECUREBOOT_DOC_URL"
+%end
+EOF
+
+    qrencode -o "$SECUREBOOT_DOC_URL_QR" "$SECUREBOOT_DOC_URL"
+
+    # Run both scripts after the other post-install steps
+    cat >>/usr/share/anaconda/interactive-defaults.ks <<'KICKSTART'
+%include /usr/share/anaconda/post-scripts/secureboot-enroll-key.ks
+%include /usr/share/anaconda/post-scripts/secureboot-docs.ks
+KICKSTART
+fi
+
 ### Live session runtime tweaks ###
 
 # Disable services that should not run in a live session

@@ -208,6 +208,10 @@ WantedBy=multi-user.target
 UNIT
 systemctl enable var-lib-flatpak.mount
 
+# systemd-tmpfiles fails to label the install target when /mnt is a symlink
+rm /mnt
+mkdir /mnt
+
 # Copy in the iso config for Titanoboa (and the path the newer image-builder contract uses)
 mkdir -p /usr/lib/bootc-image-builder /usr/lib/image-builder/bootc
 cp "$SCRIPT_DIR/iso.yaml" /usr/lib/bootc-image-builder/iso.yaml
