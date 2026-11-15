@@ -55,6 +55,7 @@ modules:
       - heroic.sh
       - abdm.sh
       - hv.sh
+      - legion.sh
       - wgcf.sh
       - bloat.sh
 
