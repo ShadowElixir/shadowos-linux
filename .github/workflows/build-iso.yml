@@ -365,6 +365,13 @@ jobs:
           image-ref: localhost/shadowos-live:build
           iso-dest: ${{ github.workspace }}/${{ steps.iso_name.outputs.iso_file }}
 
+      - name: Add legacy BIOS (CSM) boot
+        if: matrix.arch == 'x86_64'
+        shell: bash
+        env:
+          ISO: ${{ steps.iso_build.outputs.iso-dest }}
+        run: bash iso/add-bios-boot.sh "$ISO"
+
       - name: Disk usage (after ISO build)
         if: always()
         shell: bash
