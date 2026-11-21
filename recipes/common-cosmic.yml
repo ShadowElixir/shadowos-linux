@@ -37,6 +37,7 @@ modules:
       - "ln -sf /usr/bin/cosmic-store /usr/bin/bazaar"
     scripts:
       - bloat.sh
+      - cutecosmic.sh
 
   - type: os-release
     properties:
