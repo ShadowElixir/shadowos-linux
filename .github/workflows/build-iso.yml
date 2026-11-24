@@ -373,7 +373,7 @@ jobs:
         run: bash iso/add-bios-boot.sh "$ISO"
 
       - name: Disk usage (after ISO build)
-        if: always()
+        if: always() && steps.iso_build.outcome != 'skipped'
         shell: bash
         run: df -h / /mnt
 
