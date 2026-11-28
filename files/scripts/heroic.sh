@@ -10,13 +10,20 @@ case "$(uname -m)" in
     *) echo "Error: Unsupported architecture: $(uname -m)"; exit 1 ;;
 esac
 
-API_URL="https://api.github.com/repos/ShadowElixir/HeroicGamesLauncher/releases/latest"
+REPO="https://github.com/ShadowElixir/HeroicGamesLauncher"
 
-DOWNLOAD_URL=$(curl -fsSL --connect-timeout 10 --retry 3 "$API_URL" \
-    | grep -oE '"browser_download_url": *"[^"]+"' \
-    | grep -oE 'https://[^"]+' \
-    | grep -E "linux-${ARCH_SUFFIX}\.rpm$" \
-    | head -n1 || true)
+TAG_URL=$(curl -fsSL --connect-timeout 10 --retry 3 -o /dev/null -w '%{url_effective}' "${REPO}/releases/latest")
+TAG="${TAG_URL##*/}"
+
+if [ -z "$TAG" ] || [ "$TAG" = "latest" ]; then
+    echo "Error: Could not resolve the latest release."
+    exit 1
+fi
+
+REL_PATH=$(curl -fsSL --connect-timeout 10 --retry 3 "${REPO}/releases/expanded_assets/${TAG}" \
+    | grep -oE 'href="[^"]+linux-'"${ARCH_SUFFIX}"'\.rpm"' \
+    | head -n1 | cut -d'"' -f2 || true)
+DOWNLOAD_URL="${REL_PATH:+https://github.com${REL_PATH}}"
 
 if [ -z "$DOWNLOAD_URL" ]; then
     echo "Error: No ${ARCH_SUFFIX} RPM found in the latest release."
